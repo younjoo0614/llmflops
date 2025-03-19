@@ -1,10 +1,4 @@
-import json 
-
-with open('config.json', 'r') as f:
-    config_data = json.load(f)
-
-for key, value in config_data.items():
-    globals()[key] = value
+import config
 
 class Matrix:
     total_flops = 0
@@ -18,7 +12,7 @@ class Matrix:
 
 
     def get_size(self):
-        return DATA_SIZE * self.rows * self.cols * self.batch
+        return config.DATA_SIZE * self.rows * self.cols * self.batch
     
     def matmul(self, B, real):
         if (self.cols != B.rows): 
@@ -33,24 +27,25 @@ class Matrix:
         # B.rows = B.rows + k_rope.cols * NUM_HEADS
         if (self.cols != B.rows): 
             raise ValueError("Dimension does not match")
-        # result = Matrix(self.rows, B.cols, self.batch * NUM_HEADS) //need edit
-        result = Matrix(self.rows, B.cols, self.batch * 128)
+        result = Matrix(self.rows, B.cols, self.batch * config.NUM_HEADS) 
 
-        # flops = 2 * self.rows * self.cols / NUM_HEADS * result.cols * result.batch
-        flops = 2 * self.rows * self.cols / 128 * result.cols * result.batch
+        flops = 2 * self.rows * self.cols / config.NUM_HEADS * result.cols * result.batch
 
         if real: Matrix.total_flops = int(Matrix.total_flops) + int(flops)
 
         return result, flops
 
     def context_head(self, B, real):
-        # result = Matrix(self.rows, B.cols / NUM_HEADS, self.batch * NUM_HEADS)
-        result = Matrix(self.rows, B.cols / 128, self.batch)
+        result = Matrix(self.rows, B.cols / config.NUM_HEADS, self.batch)
         flops = 2 * self.rows * self.cols * result.cols * result.batch
 
         if real: Matrix.total_flops = int(Matrix.total_flops) + int(flops)
 
         return result, flops 
+
+    def element_wise(self, real):
+        flops = self.rows * self.cols * self.batch * 4 # change this value with switch, if etc.
+        return self, flops
 
     def norm(self, real):
         flops = self.rows * self.cols * self.batch * 4
