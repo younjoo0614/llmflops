@@ -1,3 +1,11 @@
+import json 
+
+with open('config.json', 'r') as f:
+    config_data = json.load(f)
+
+for key, value in config_data.items():
+    globals()[key] = value
+
 class Matrix:
     total_flops = 0
     def __init__(self, rows: int, cols: int, batch: int = 1):
