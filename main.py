@@ -34,14 +34,22 @@ def main(input_seq_len, output_seq_len, batch_size, data_size, model_num):
     print(f"Batch Size: {batch_size}")
     print(f"Data Size: {data_size}")
     print(f"Model Num: {model_num}")
-    print(f"Model Name: {model_config['Model Name']}")
-    print(config.NUM_HEADS)
+    print(f"Model Name: {model_config['Model Name']}\n\n")
+    print(f"deepseek_base prefiil dense\n")
     df = create_layer_dataframe(layer_config)
     # print(df)
     # df.to_csv("temp.csv", index=False, encoding="utf-8")
     deepseek_base = Model("deepseek_base", df)
-    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config)
+    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, False)
+    
+    print(f"\n\ndeepseek_base decode dense\n")
+    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, False)
 
+    print(f"\n\ndeepseek_base prefill moe\n")
+    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, True)
+
+    print(f"\n\ndeepseek_base deocde moe\n")
+    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, True)
 
 
     

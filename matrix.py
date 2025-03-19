@@ -10,7 +10,10 @@ class Matrix:
     def __str__(self):
         return f"rows: {self.rows}, cols: {self.cols}, batch: {self.batch}"
 
-
+    @classmethod
+    def reset_flops(cls):
+        cls.total_flops = 0 
+        
     def get_size(self):
         return DATA_SIZE * self.rows * self.cols * self.batch
     
