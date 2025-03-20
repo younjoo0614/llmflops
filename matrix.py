@@ -18,7 +18,7 @@ class Matrix:
         return DATA_SIZE * self.rows * self.cols * self.batch
     
     def matmul(self, B, real):
-        if (self.cols != B.rows): 
+        if (self.cols != B.rows):
             raise ValueError("Dimension does not match")
         result = Matrix(self.rows, B.cols, self.batch)
         flops = 2 * self.batch * self.rows * B.rows * B.cols
@@ -41,8 +41,15 @@ class Matrix:
         return result, flops
 
     def context_head(self, B, real):
-        # result = Matrix(self.rows, B.cols / 128, self.batch)
         result = Matrix(self.rows, B.cols / config.NUM_HEADS, self.batch)
+        flops = 2 * self.rows * self.cols * result.cols * result.batch
+
+        if real: Matrix.total_flops = int(Matrix.total_flops) + int(flops)
+
+        return result, flops 
+
+    def out_proj_context_head(self, B, real):
+        result = Matrix(self.rows, B.cols, self.batch)
         flops = 2 * self.rows * self.cols * result.cols * result.batch
 
         if real: Matrix.total_flops = int(Matrix.total_flops) + int(flops)

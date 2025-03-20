@@ -39,18 +39,19 @@ def main(input_seq_len, output_seq_len, batch_size, data_size, model_num):
     df = create_layer_dataframe(layer_config)
     # print(df)
     # df.to_csv("temp.csv", index=False, encoding="utf-8")
-    deepseek_base = Model("deepseek_base", df)
-    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, False)
+
     
-    print(f"\n\ndeepseek_base decode dense\n")
-    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, False)
+    deepseek_base = Model("deepseek_base", df)
+    # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, False)
+    # print(f"\n\ndeepseek_base decode dense\n")
+    # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, False)
+    # print(f"\n\ndeepseek_base prefill moe\n")
+    # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, True)
+    # print(f"\n\ndeepseek_base deocde moe\n")
+    # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, True)
 
-    print(f"\n\ndeepseek_base prefill moe\n")
-    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, True)
-
-    print(f"\n\ndeepseek_base deocde moe\n")
-    deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, True)
-
+    print(f"\n\ndeepseek_w_uk_first prefill dense\n")
+    deepseek_base.w_uk_first_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, False)
 
     
 if __name__ == "__main__":
