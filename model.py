@@ -266,6 +266,8 @@ class Model:
 
             if layer.name == "score layer for NoPE":
                 layer.inputB.transpose()
+                if decode_flag == True:
+                    layer.inputB.cols = layer.inputB.cols + input_seq_len
             elif layer.name == "context_matmul":
                 layer.inputB.transpose()
             elif layer.name == "v_up_proj_context":
@@ -273,9 +275,9 @@ class Model:
             elif layer.name == "gate_routed":
                 layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
                 if layer.inputA.rows < 1 : layer.inputA.rows = 1
+            elif layer.name == "score layer for RoPE" and decode_flag == True:
+                layer.inputB.cols = layer.inputB.cols + input_seq_len
 
-            # print(layer.inputA)
-            # print(layer.inputB) 
 
             result = layer.forward()
             layer.output.update(result)
@@ -284,12 +286,19 @@ class Model:
             if layer.name == "score layer for RoPE":
                 layer.output.rows = input_seq_len*model_config["n_heads"]
             #reshape after q_rope
-            if layer.name == "q_rope":
+            if layer.name == "q_rope" and decode_flag == True:
+                layer.output.rows = 128
+                layer.output.cols = 64
+                ropped_k.transpose()
+            elif layer.name == "q_rope" and decode_flag == False:
                 layer.output.rows = input_seq_len * model_config["n_heads"]
                 layer.output.cols = model_config["qk rope head dim"]
                 ropped_k.transpose()
             if layer.name == "score layer for RoPE":
-                layer.output.rows = input_seq_len * model_config["n_heads"]
+                if decode_flag == False:
+                    layer.output.rows = input_seq_len * model_config["n_heads"]
+                else:
+                    layer.output.rows = model_config["n_heads"]
             if layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
             df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]
