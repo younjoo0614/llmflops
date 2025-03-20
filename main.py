@@ -50,13 +50,19 @@ def main(input_seq_len, output_seq_len, batch_size, data_size, model_num):
     # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, True)
     # print(f"\n\ndeepseek_base deocde moe\n")
     # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, True)
-    df_w_uk_first = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
 
-    print(f"\n\ndeepseek_w_uk_first prefill dense\n")
-    deepseek_base.w_uk_first_layer("deepseek_base", df_w_uk_first, input_seq_len, batch_size, model_config, False, False)
+    # df_w_uk_first = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first prefill dense\n")
+    # deepseek_base.w_uk_first_layer("deepseek_base", df_w_uk_first, input_seq_len, batch_size, model_config, False, False)
+    # print(df_w_uk_first)
+    # df_w_uk_first.to_csv("temp.csv", index=False, encoding="utf-8")
 
-    print(df_w_uk_first)
-    df_w_uk_first.to_csv("temp.csv", index=False, encoding="utf-8")
+    df_w_uk_first_prefill_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    print(f"\n\ndeepseek_w_uk_first prefill moe\n")
+    deepseek_base.w_uk_first_layer("deepseek_base", df_w_uk_first_prefill_moe, input_seq_len, batch_size, model_config, False, True)
+    print(df_w_uk_first_prefill_moe)
+    df_w_uk_first_prefill_moe.to_csv("temp.csv", index=False, encoding="utf-8")
+
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process model training with configurations")

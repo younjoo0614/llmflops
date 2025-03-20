@@ -259,8 +259,8 @@ class Model:
 
         if moe_flag == False:
             w_uk_first_layers = w_uk_first_layers + w_uk_first_non_moe_ffn_layers
-        # else:
-        #     base_layers = base_layers + moe_ffn_layers
+        else:
+            w_uk_first_layers = w_uk_first_layers + w_uk_first_moe_ffn_layers
 
         for layer in w_uk_first_layers:
 
@@ -270,7 +270,9 @@ class Model:
                 layer.inputB.transpose()
             elif layer.name == "v_up_proj_context":
                 layer.inputA.update(Matrix(layer.inputA.rows / model_config['n_heads'], layer.inputA.cols, layer.inputA.batch * model_config['n_heads']))
-
+            elif layer.name == "gate_routed":
+                layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
+                if layer.inputA.rows < 1 : layer.inputA.rows = 1
 
             # print(layer.inputA)
             # print(layer.inputB) 
@@ -288,7 +290,6 @@ class Model:
                 ropped_k.transpose()
             if layer.name == "score layer for RoPE":
                 layer.output.rows = input_seq_len * model_config["n_heads"]
-                # layer.output.batch = 1 ##이거왜????
             if layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
             df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]
