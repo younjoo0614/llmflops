@@ -2,6 +2,7 @@ from matrix import Matrix
 from layer import Layer
 import config
 
+
 class Model:
     def __init__(self, name, df):
         self.name = name
@@ -278,7 +279,6 @@ class Model:
             layer.output.update(result)
             # print(layer.output) 
             
-            print(layer.name, layer.flops)
             if layer.name == "score layer for RoPE":
                 layer.output.rows = input_seq_len*model_config["n_heads"]
             #reshape after q_rope
@@ -288,9 +288,11 @@ class Model:
                 ropped_k.transpose()
             if layer.name == "score layer for RoPE":
                 layer.output.rows = input_seq_len * model_config["n_heads"]
-                layer.output.batch = 1
+                # layer.output.batch = 1 ##이거왜????
             if layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
-
-        print(result_vector.total_flops)
+            df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]
+            
+        total_flops = df["FLOPS"].sum()
+        df.loc[len(df)] = ["Total FLOPS", total_flops,"", "", ""]
         Matrix.reset_flops()

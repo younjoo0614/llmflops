@@ -5,6 +5,7 @@ from config import load_layer_config, load_model_config, create_layer_dataframe
 from matrix import Matrix
 from layer import Layer
 from model import Model
+import pandas as pd
 
 def print_layer_config(layer_config, indent=0):
 
@@ -49,10 +50,13 @@ def main(input_seq_len, output_seq_len, batch_size, data_size, model_num):
     # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, True)
     # print(f"\n\ndeepseek_base deocde moe\n")
     # deepseek_base.base_layer("deepseek_base", df, input_seq_len, batch_size, model_config, True, True)
+    df_w_uk_first = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
 
     print(f"\n\ndeepseek_w_uk_first prefill dense\n")
-    deepseek_base.w_uk_first_layer("deepseek_base", df, input_seq_len, batch_size, model_config, False, False)
+    deepseek_base.w_uk_first_layer("deepseek_base", df_w_uk_first, input_seq_len, batch_size, model_config, False, False)
 
+    print(df_w_uk_first)
+    df_w_uk_first.to_csv("temp.csv", index=False, encoding="utf-8")
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process model training with configurations")

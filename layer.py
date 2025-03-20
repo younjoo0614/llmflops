@@ -23,15 +23,13 @@ class Layer:
             result, self.flops = self.inputA.silu(True)
 
         elif "score" in self.name and "score layer for RoPE" != self.name  and "score layer for NoPE" != self.name or "transposed" in self.name :
-            print(self.name, "score_head")
             result, self.flops = self.inputA.score_head(self.inputB, True)
         
         elif "context" in self.name  and "context_matmul" != self.name and "out_proj_context" != self.name:
-            print(self.name, "context_head")
             result, self.flops = self.inputA.context_head(self.inputB, True)
         
         elif "out_proj_context" == self.name:
-            print(self.name, "out_proj_context")
+
             result, self.flops = self.inputA.out_proj_context_head(self.inputB, True)
             
         else:

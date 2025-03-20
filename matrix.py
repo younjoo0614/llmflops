@@ -8,7 +8,8 @@ class Matrix:
         self.batch = batch
     
     def __str__(self):
-        return f"rows: {self.rows}, cols: {self.cols}, batch: {self.batch}"
+        # return f"rows: {self.rows}, cols: {self.cols}, batch: {self.batch}"
+        return f"{self.rows},{self.cols},{self.batch}"
 
     @classmethod
     def reset_flops(cls):
