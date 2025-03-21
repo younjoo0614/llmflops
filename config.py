@@ -1,11 +1,6 @@
 import json
 import pandas as pd
 
-def load_layer_config(layer_config_file="/scale/cal/home/kupsy/AI/Temp/layer/base_layer.json"):
-    with open(layer_config_file, mode="r", encoding="utf-8") as file:
-        return json.load(file)
-
-
 def load_model_config(model_num, model_config_file="/scale/cal/home/kupsy/AI/Temp/model_config.json"):
     with open(model_config_file, mode="r", encoding="utf-8") as file:
         model_config = json.load(file)
