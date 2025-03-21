@@ -51,45 +51,45 @@ def main(input_seq_len, output_seq_len, batch_size, data_size, model_num):
     # print(f"\n\ndeepseek deocde moe\n")
     # deepseek.base_layer("deepseek", df, input_seq_len, batch_size, model_config, True, True)
 
-    deepseek_base = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
-    print(f"\n\ndeepseek_w_uk_first prefill dense\n")
-    deepseek.base_layer("deepseek", deepseek_base, input_seq_len, output_seq_len, batch_size, model_config, False, False)
-    print(deepseek_base)
-    deepseek_base.to_csv("./result/deepseek_base_prefill_dense.csv", index=False, encoding="utf-8")
+    # deepseek_base = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first prefill dense\n")
+    # deepseek.base_layer("deepseek", deepseek_base, input_seq_len, output_seq_len, batch_size, model_config, False, False)
+    # print(deepseek_base)
+    # deepseek_base.to_csv("./result/deepseek_base_prefill_dense.csv", index=False, encoding="utf-8")
 
-    deepseek_base_prefill_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
-    print(f"\n\ndeepseek_w_uk_first prefill moe\n")
-    deepseek.base_layer("deepseek", deepseek_base_prefill_moe, input_seq_len, output_seq_len, batch_size, model_config, False, True)
-    print(deepseek_base_prefill_moe)
-    deepseek_base_prefill_moe.to_csv("./result/deepseek_base_prefill_moe.csv", index=False, encoding="utf-8")
+    # deepseek_base_prefill_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first prefill moe\n")
+    # deepseek.base_layer("deepseek", deepseek_base_prefill_moe, input_seq_len, output_seq_len, batch_size, model_config, False, True)
+    # print(deepseek_base_prefill_moe)
+    # deepseek_base_prefill_moe.to_csv("./result/deepseek_base_prefill_moe.csv", index=False, encoding="utf-8")
 
-    deepseek_base_decode = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
-    print(f"\n\ndeepseek_w_uk_first decode dense\n")
-    deepseek.base_layer("deepseek", deepseek_base_decode, input_seq_len, output_seq_len, batch_size, model_config, True, False)
-    print(deepseek_base_decode)
-    deepseek_base_decode.to_csv("./result/deepseek_base_decode_dense.csv", index=False, encoding="utf-8")
+    # deepseek_base_decode = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first decode dense\n")
+    # deepseek.base_layer("deepseek", deepseek_base_decode, input_seq_len, output_seq_len, batch_size, model_config, True, False)
+    # print(deepseek_base_decode)
+    # deepseek_base_decode.to_csv("./result/deepseek_base_decode_dense.csv", index=False, encoding="utf-8")
 
-    deepseek_base_decode_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
-    print(f"\n\ndeepseek_w_uk_first decode moe\n")
-    deepseek.base_layer("deepseek", deepseek_base_decode_moe, input_seq_len, output_seq_len, batch_size, model_config, True, True)
-    print(deepseek_base_decode_moe)
-    deepseek_base_decode_moe.to_csv("./result/deepseek_base_decode_moe.csv", index=False, encoding="utf-8")
-
-
+    # deepseek_base_decode_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first decode moe\n")
+    # deepseek.base_layer("deepseek", deepseek_base_decode_moe, input_seq_len, output_seq_len, batch_size, model_config, True, True)
+    # print(deepseek_base_decode_moe)
+    # deepseek_base_decode_moe.to_csv("./result/deepseek_base_decode_moe.csv", index=False, encoding="utf-8")
 
 
 
-    df_w_uk_first = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
-    print(f"\n\ndeepseek_w_uk_first prefill dense\n")
-    deepseek.w_uk_first_layer("deepseek", df_w_uk_first, input_seq_len, output_seq_len, batch_size, model_config, False, False)
-    print(df_w_uk_first)
-    df_w_uk_first.to_csv("./result/deepseek_w_uk_first_prefill_dense.csv", index=False, encoding="utf-8")
 
-    df_w_uk_first_prefill_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
-    print(f"\n\ndeepseek_w_uk_first prefill moe\n")
-    deepseek.w_uk_first_layer("deepseek", df_w_uk_first_prefill_moe, input_seq_len, output_seq_len, batch_size, model_config, False, True)
-    print(df_w_uk_first_prefill_moe)
-    df_w_uk_first_prefill_moe.to_csv("./result/deepseek_w_uk_first_prefill_moe.csv", index=False, encoding="utf-8")
+
+    # df_w_uk_first = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first prefill dense\n")
+    # deepseek.w_uk_first_layer("deepseek", df_w_uk_first, input_seq_len, output_seq_len, batch_size, model_config, False, False)
+    # print(df_w_uk_first)
+    # df_w_uk_first.to_csv("./result/deepseek_w_uk_first_prefill_dense.csv", index=False, encoding="utf-8")
+
+    # df_w_uk_first_prefill_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first prefill moe\n")
+    # deepseek.w_uk_first_layer("deepseek", df_w_uk_first_prefill_moe, input_seq_len, output_seq_len, batch_size, model_config, False, True)
+    # print(df_w_uk_first_prefill_moe)
+    # df_w_uk_first_prefill_moe.to_csv("./result/deepseek_w_uk_first_prefill_moe.csv", index=False, encoding="utf-8")
 
     df_w_uk_first_decode = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
     print(f"\n\ndeepseek_w_uk_first decode dense\n")
@@ -97,11 +97,11 @@ def main(input_seq_len, output_seq_len, batch_size, data_size, model_num):
     print(df_w_uk_first_decode)
     df_w_uk_first_decode.to_csv("./result/deepseek_w_uk_first_decode_dense.csv", index=False, encoding="utf-8")
 
-    df_w_uk_first_decode_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
-    print(f"\n\ndeepseek_w_uk_first decode moe\n")
-    deepseek.w_uk_first_layer("deepseek", df_w_uk_first_decode_moe, input_seq_len, output_seq_len, batch_size, model_config, True, True)
-    print(df_w_uk_first_decode_moe)
-    df_w_uk_first_decode_moe.to_csv("./result/deepseek_w_uk_first_decode_moe.csv", index=False, encoding="utf-8")
+    # df_w_uk_first_decode_moe = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output"])
+    # print(f"\n\ndeepseek_w_uk_first decode moe\n")
+    # deepseek.w_uk_first_layer("deepseek", df_w_uk_first_decode_moe, input_seq_len, output_seq_len, batch_size, model_config, True, True)
+    # print(df_w_uk_first_decode_moe)
+    # df_w_uk_first_decode_moe.to_csv("./result/deepseek_w_uk_first_decode_moe.csv", index=False, encoding="utf-8")
 
     
 if __name__ == "__main__":
