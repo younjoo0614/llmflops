@@ -123,9 +123,9 @@ class Model:
                 layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
                 if layer.inputA.rows < 1 : layer.inputA.rows = 1
             
-            print(layer.name, layer.flops)
-            print(layer.inputA)
-            print(layer.inputB)
+            # print(layer.name, layer.flops)
+            # print(layer.inputA)
+            # print(layer.inputB)
             result = layer.forward()
             layer.output.update(result)
 
@@ -315,8 +315,6 @@ class Model:
             if layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
             
-            if decode_flag == False:
-                df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]
 
             if decode_flag == False:
                 df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]

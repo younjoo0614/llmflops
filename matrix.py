@@ -6,7 +6,7 @@ class Matrix:
         self.rows = rows
         self.cols = cols
         self.batch = batch
-    
+     
     def __str__(self):
         # return f"rows: {self.rows}, cols: {self.cols}, batch: {self.batch}"
         return f"{int(self.rows)},{int(self.cols)},{int(self.batch)}"
