@@ -4,9 +4,8 @@ import config
 
 
 class Model:
-    def __init__(self, name, df):
+    def __init__(self, name):
         self.name = name
-        self.df = df
 
     def base_layer(self, name, df, input_seq_len, output_seq_len, batch_size, model_config, decode_flag, moe_flag):
         
@@ -328,3 +327,4 @@ class Model:
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops,"", "", ""]
         Matrix.reset_flops()
+
