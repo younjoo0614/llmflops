@@ -8,7 +8,7 @@ class Model:
         self.name = name
         self.df = df
 
-    def base_layer(self, name, df, input_seq_len, batch_size, model_config, decode_flag, moe_flag):
+    def base_layer(self, name, df, input_seq_len, output_seq_len, batch_size, model_config, decode_flag, moe_flag):
         
         #input matrix 
         if decode_flag == False: #prefill
@@ -145,7 +145,7 @@ class Model:
 
 
 
-    def w_uk_first_layer(self, name, df, input_seq_len, batch_size, model_config, decode_flag, moe_flag):
+    def w_uk_first_layer(self, name, df, input_seq_len, output_seq_len, batch_size, model_config, decode_flag, moe_flag):
         
         #input matrix 
         if decode_flag == False: #prefill
@@ -262,47 +262,58 @@ class Model:
         else:
             w_uk_first_layers = w_uk_first_layers + w_uk_first_moe_ffn_layers
 
-        for layer in w_uk_first_layers:
 
-            if layer.name == "score layer for NoPE":
-                layer.inputB.transpose()
-                if decode_flag == True:
-                    layer.inputB.cols = layer.inputB.cols + input_seq_len
-            elif layer.name == "context_matmul":
-                layer.inputB.transpose()
-            elif layer.name == "v_up_proj_context":
-                layer.inputA.update(Matrix(layer.inputA.rows / model_config['n_heads'], layer.inputA.cols, layer.inputA.batch * model_config['n_heads']))
-            elif layer.name == "gate_routed":
-                layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
-                if layer.inputA.rows < 1 : layer.inputA.rows = 1
-            elif layer.name == "score layer for RoPE" and decode_flag == True:
-                layer.inputB.cols = layer.inputB.cols + input_seq_len
+        for i in range(output_seq_len if decode_flag else 1):
 
+            for layer in w_uk_first_layers:
 
-            result = layer.forward()
-            layer.output.update(result)
-            # print(layer.output) 
-            
-            if layer.name == "score layer for RoPE":
-                layer.output.rows = input_seq_len*model_config["n_heads"]
-            #reshape after q_rope
-            if layer.name == "q_rope" and decode_flag == True:
-                layer.output.rows = 128
-                layer.output.cols = 64
-                ropped_k.transpose()
-            elif layer.name == "q_rope" and decode_flag == False:
-                layer.output.rows = input_seq_len * model_config["n_heads"]
-                layer.output.cols = model_config["qk rope head dim"]
-                ropped_k.transpose()
-            if layer.name == "score layer for RoPE":
-                if decode_flag == False:
+                if layer.name == "score layer for NoPE":
+                    layer.inputB.transpose()
+                    if decode_flag == True:
+                        layer.inputB.cols = layer.inputB.cols + input_seq_len + i
+                elif layer.name == "context_matmul":
+                    layer.inputB.transpose()
+                elif layer.name == "v_up_proj_context":
+                    layer.inputA.update(Matrix(layer.inputA.rows / model_config['n_heads'], layer.inputA.cols, layer.inputA.batch * model_config['n_heads']))
+                elif layer.name == "gate_routed":
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
+                    if layer.inputA.rows < 1 : layer.inputA.rows = 1
+                elif layer.name == "score layer for RoPE" and decode_flag == True:
+                    layer.inputB.cols = layer.inputB.cols + input_seq_len  + i
+
+                result = layer.forward()
+                layer.output.update(result)
+                # print(layer.output) 
+                
+                if layer.name == "score layer for RoPE":
+                    layer.output.rows = input_seq_len*model_config["n_heads"]
+                #reshape after q_rope
+                if layer.name == "q_rope" and decode_flag == True:
+                    layer.output.rows = 128
+                    layer.output.cols = 64
+                    ropped_k.transpose()
+                elif layer.name == "q_rope" and decode_flag == False:
                     layer.output.rows = input_seq_len * model_config["n_heads"]
+                    layer.output.cols = model_config["qk rope head dim"]
+                    ropped_k.transpose()
+                if layer.name == "score layer for RoPE":
+                    if decode_flag == False:
+                        layer.output.rows = input_seq_len * model_config["n_heads"]
+                    else:
+                        layer.output.rows = model_config["n_heads"]
+                if layer.name == "out_proj_context":
+                    layer.output.batch = layer.output.batch / model_config["n_heads"]
+                
+                if decode_flag == False:
+                    df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]
+
                 else:
-                    layer.output.rows = model_config["n_heads"]
-            if layer.name == "out_proj_context":
-                layer.output.batch = layer.output.batch / model_config["n_heads"]
-            df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]
-            
+                    if layer.name in df["Layer Name"].values:
+                        df.loc[df["Layer Name"] == layer.name, "FLOPS"] += layer.flops
+                    else:
+                        df.loc[len(df)] = [layer.name, int(layer.flops), layer.inputA, layer.inputB, layer.output]
+
+                            
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops,"", "", ""]
         Matrix.reset_flops()

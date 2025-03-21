@@ -9,7 +9,7 @@ class Matrix:
     
     def __str__(self):
         # return f"rows: {self.rows}, cols: {self.cols}, batch: {self.batch}"
-        return f"{self.rows},{self.cols},{self.batch}"
+        return f"{int(self.rows)},{int(self.cols)},{int(self.batch)}"
 
     @classmethod
     def reset_flops(cls):
@@ -38,7 +38,7 @@ class Matrix:
         flops = 2 * self.rows * self.cols / config.NUM_HEADS * result.cols * result.batch
 
         if real: Matrix.total_flops = int(Matrix.total_flops) + int(flops)
-
+        B.transpose()
         return result, flops
 
     def context_head(self, B, real):
