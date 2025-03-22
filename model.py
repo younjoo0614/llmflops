@@ -155,15 +155,22 @@ class Model:
         for layer in base_layers:
             if layer.name == "score" and decode_flag == True:
                 layer.inputB.rows = (output_len + 1) / 2 + input_len
+            elif layer.name == "context_head" and decode_flag == True:
+                layer.inputB.rows = (output_len + 1) / 2 + input_len
+            # elif layer.name == "gate_routed":
+            #     layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts']
+            #     layer.inputA.batch = 1
+            #     if layer.inputA.rows < 1:
+            #         layer.inputA.rows = 1
             elif layer.name == "gate_routed":
-                layer.inputA.rows = layer.inputA.rows * model_config[
-                    'top-k'] / model_config['n_experts']
-                if layer.inputA.rows < 1:
-                    layer.inputA.rows = 1
+                if decode_flag == False:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
+                else:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts']
+                    layer.inputA.batch = 1
+                    if layer.inputA.rows < 1:
+                        layer.inputA.rows = 1
 
-            # print(layer.name, layer.flops)
-            # print(layer.inputA)
-            # print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
 
@@ -381,10 +388,13 @@ class Model:
                            layer.inputA.cols,
                            layer.inputA.batch * model_config['n_heads']))
             elif layer.name == "gate_routed":
-                layer.inputA.rows = layer.inputA.rows * model_config[
-                    'top-k'] / model_config['n_experts']
-                if layer.inputA.rows < 1:
-                    layer.inputA.rows = 1
+                if decode_flag == False:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
+                else:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts']
+                    layer.inputA.batch = 1
+                    if layer.inputA.rows < 1:
+                        layer.inputA.rows = 1
             elif layer.name == "score layer for RoPE" and decode_flag == True:
                 # layer.inputB.cols = layer.inputB.cols + input_len  + i
                 layer.inputB.cols = (output_len + 1) / 2 + input_len

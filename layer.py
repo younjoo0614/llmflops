@@ -72,9 +72,9 @@ class Layer:
         if op_per_byte < hbm_balance_point:
             if self.inputB is not None:
                 return (self.inputA.get_size() + self.inputB.get_size() +
-                        self.output.get_size()) / Layer.hbm_bw / 1e3
+                        self.output.get_size()) / Layer.hbm_bw / 1e3 
             else:
-                return (self.inputA.get_size() +
-                        self.output.get_size()) / Layer.hbm_bw / 1e3
+                return (self.inputA.get_size() + 
+                        self.output.get_size()) / Layer.hbm_bw /1e3
         else:
-            return self.flops / Layer.throughput / 1e6
+            return (self.flops) / Layer.throughput /1e6
