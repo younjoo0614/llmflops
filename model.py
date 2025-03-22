@@ -1,6 +1,7 @@
 from matrix import Matrix
 from layer import Layer
 import json
+import pandas as pd
 
 
 class Model:
@@ -219,6 +220,10 @@ class Model:
 
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "", "", "", ""]
+        df["Execution_time"] = pd.to_numeric(df["Execution_time"], errors="coerce")
+        total_time = df["Execution_time"].sum()
+        df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100
+        df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
         Matrix.reset_flops()
 
     def w_uk_first_layer(self, name, df, input_len, output_len, batch_size,
@@ -447,4 +452,9 @@ class Model:
 
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "", "", "", ""]
+        df["Execution_time"] = pd.to_numeric(df["Execution_time"], errors="coerce")
+        total_time = df["Execution_time"].sum()
+        df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100
+        df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
+
         Matrix.reset_flops()
