@@ -25,32 +25,14 @@ def print_layer_config(layer_config, indent=0):
 def main():
     parser = argparse.ArgumentParser(
         description="Process model training with configurations")
-    parser.add_argument("--input-len",
-                        type=int,
-                        required=True,
-                        help="Input Sequence Length")
-    parser.add_argument("--output-len",
-                        type=int,
-                        required=True,
-                        help="Output Sequence Length")
-    parser.add_argument("--batch-size",
-                        type=int,
-                        required=True,
-                        help="Batch Size")
-    parser.add_argument("--data-size",
-                        type=int,
-                        required=True,
-                        help="Data Size")
-    parser.add_argument("--model-num",
-                        type=int,
-                        required=True,
-                        help="Model Num")
+    parser.add_argument("--input-len",type=int, required=True, help="Input Sequence Length")
+    parser.add_argument("--output-len", type=int, required=True, help="Output Sequence Length")
+    parser.add_argument("--batch-size", type=int, required=True, help="Batch Size")
+    parser.add_argument("--data-size", type=int, required=True, help="Data Size")
+    parser.add_argument("--model-num", type=int, required=True, help="Model Num")
 
     args = parser.parse_args()
-    # print_layer_config(layer_config)
     model_config = load_model_config(args.model_num)
-    # print("===== Model Configuration =====")
-    # print(json.dumps(model_config, indent=4))
 
     print("===== Configuration =====")
     print(f"Input Sequence Length: {args.input_len}")
@@ -60,8 +42,6 @@ def main():
     print(f"Model Num: {args.model_num}")
     print(f"Model Name: {model_config['Model Name']}\n\n")
     print(f"deepseek_base prefiil dense\n")
-    
-    # deepseek = Model("deepseek")
 
     deepseek = Model("deepseek")
 
