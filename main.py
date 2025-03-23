@@ -30,6 +30,8 @@ def main():
     parser.add_argument("--batch-size", type=int, required=True, help="Batch Size")
     parser.add_argument("--data-size", type=int, required=True, help="Data Size")
     parser.add_argument("--model-num", type=int, required=True, help="Model Num")
+    parser.add_argument("--tp-degree", type=int, default=1)
+    parser.add_argument("--dp-degree", type=int, default=1)
 
     args = parser.parse_args()
     model_config = load_model_config(args.model_num)
@@ -46,15 +48,11 @@ def main():
     deepseek = Model("deepseek")
 
     deepseek_base = pd.DataFrame(columns=[
-        "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
-        "Execution_time"
+        "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B", "Execution_time"
     ])
-    deepseek.base_layer("deepseek", deepseek_base, args.input_len,
-                        args.output_len, args.batch_size, args.tensor_parallelism_degree, model_config, False,
-                        False)
-    deepseek_base.to_csv("./result/base/deepseek_base_prefill_dense.csv",
-                         index=False,
-                         encoding="utf-8")
+    deepseek.base_layer("deepseek", deepseek_base, args.input_len, args.output_len, args.batch_size, 
+                        args.tensor_parallelism_degree, model_config, False, False)
+    deepseek_base.to_csv("./result/base/deepseek_base_prefill_dense.csv", index=False, encoding="utf-8")
 
     create_time_graph(deepseek_base, "/base/deepseek_base_prefill_dense")
 

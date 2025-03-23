@@ -1,5 +1,6 @@
 {
     "TFLOPS" : 989.4,
     "HBM_BW" : 3352,
-    "LPDDR_BW" : 500
+    "LPDDR_BW" : 500,
+    "TP_DEGREE" : 4
 }

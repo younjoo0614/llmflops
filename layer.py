@@ -1,6 +1,7 @@
-from matrix import Matrix
-
 import json
+
+from matrix import Matrix
+from tp_type import TPType
 
 with open("device_config.json", "r") as file:
     data = json.load(file)
@@ -16,7 +17,7 @@ class Layer:
                  inputA: Matrix,
                  inputB: Matrix = None,
                  output: Matrix = None,
-                 tp = None,
+                 tp: TPType = TPType.NONE,
                  tp_degree: int = 1,
                  parallelism_cost_flag = None):
         self.name = name
@@ -30,14 +31,27 @@ class Layer:
         self.parallelism_cost = None
 
         if self.tp_degree > 1:
-            if self.tp == "col":
+            if self.tp == TPType.COL:
                 if self.inputB:
                     self.inputB.cols = self.inputB.cols / self.tp_degree
                 else: 
                     self.inputA.cols = self.inputA.cols / self.tp_degree
-            else:
+            elif self.tp == TPType.ROW:
                 self.inputA.cols = self.inputB.cols / self.tp_degree
                 if self.inputB: self.inputB.rows = self.inputB.rows / self.tp_degree
+            elif self.tp == TPType.ROW_IN:
+                self.inputA.rows = self.inputA.rows / self.tp_degree
+            elif self.tp == TPType.HEAD_ROW_COL:
+                self.inputA.rows = self.inputA.rows / self.tp_degree
+                self.inputB.cols = self.inputB.cols / self.tp_degree
+            elif self.tp == TPType.HEAD_COL_ROW:
+                self.inputA.cols = self.inputA.cols / self.tp_degree
+                self.inputB.rows = self.inputB.rows / self.tp_degree
+            elif self.tp == TPType.HEAD_COL_COL:
+                self.inputA.cols = self.inputA.cols / self.tp_degree
+                self.inputB.cols = self.inputB.cols / self.tp_degree
+            else: # tp == None
+                pass
 
 
     def forward(self):
@@ -105,7 +119,7 @@ class Layer:
             elif self.inputB == None:
                 self.output.cols = self.output.cols * self.parallelism_degre
                 # self.inputA.cols = self.inputA.cols * self.parallelism_degre
-        elif self.parallelism == "row_parallelism":
+        elif self.parallelism == "row":
             if self.parallelism_cost_flag == True:
                 self.parallelism_cost = 44444 #todo
             self.inputA.cols = self.inputA.cols * self.parallelism_degre

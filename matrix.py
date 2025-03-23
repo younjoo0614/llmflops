@@ -1,6 +1,5 @@
 import config
 
-
 class Matrix:
     total_flops = 0
 
@@ -38,17 +37,17 @@ class Matrix:
         B.transpose()
         if (self.cols != B.rows):
             raise ValueError("Dimension does not match")
-        result = Matrix(self.rows, B.cols, self.batch * config.NUM_HEADS)
+        result = Matrix(self.rows, B.cols, self.batch * (config.NUM_HEADS / config.TP_DEGREE))
 
-        flops = 2 * self.rows * self.cols / config.NUM_HEADS * result.cols * result.batch
+        flops = 2 * self.rows * self.cols / (config.NUM_HEADS / config.TP_DEGREE) * result.cols * result.batch
 
         if real:
             Matrix.total_flops = int(Matrix.total_flops) + int(flops)
-        B.transpose()
+        B.transpose() # 이거 있어야 하는지 확인
         return result, flops
 
     def context_head(self, B, real):
-        result = Matrix(self.rows, B.cols / config.NUM_HEADS, self.batch)
+        result = Matrix(self.rows, B.cols / (config.NUM_HEADS / config.TP_DEGREE), self.batch)
         flops = 2 * self.rows * self.cols * result.cols * result.batch
 
         if real:
