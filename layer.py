@@ -11,12 +11,23 @@ class Layer:
     hbm_bw = data["HBM_BW"]
     lp_bw = data["LPDDR_BW"]
 
-    def __init__(self, name, inputA: Matrix, inputB: Matrix = None, output: Matrix = None):
+    def __init__(self,
+                 name,
+                 inputA: Matrix,
+                 inputB: Matrix = None,
+                 output: Matrix = None,
+                 parallelism = None,
+                 parallelism_degre = None,
+                 parallelism_cost_flag = None):
         self.name = name
         self.inputA = inputA
         self.inputB = inputB
         self.output = output
         self.flops = None
+        self.parallelism = parallelism
+        self.parallelism_degre = parallelism_degre
+        self.parallelism_cost_flag = parallelism_cost_flag
+        self.parallelism_cost = None
 
     def forward(self):
         if "norm" in self.name:
@@ -69,4 +80,37 @@ class Layer:
             else:
                 return (self.inputA.get_size() + self.output.get_size()) / Layer.hbm_bw / 1e3
         else:
-            return (self.flops) / Layer.throughput / 1e6
+            return (self.flops) / Layer.throughput /1e6
+
+    def apply_parallelism(self):
+        if self.parallelism == None:
+            return
+        elif self.parallelism == "column_parallelism":
+            if self.inputB != None:
+                self.inputB.cols = self.inputB.cols / self.parallelism_degre
+            elif self.inputB == None:
+                self.inputA.cols = self.inputA.cols / self.parallelism_degre
+
+        elif self.parallelism == "row_parallelism":
+            self.inputA.cols = self.inputA.cols / self.parallelism_degre
+            if self.inputB != None:
+                self.inputB.rows = self.inputB.rows / self.parallelism_degre
+
+    def reset_parallelism(self):
+        if self.parallelism == None:
+            return
+        elif self.parallelism == "column_parallelism":
+            if self.parallelism_cost_flag == True:
+                self.parallelism_cost = 44444 #todo
+            if self.inputB != None:
+                self.output.cols = self.output.cols * self.parallelism_degre
+                self.inputB.cols = self.inputB.cols * self.parallelism_degre
+            elif self.inputB == None:
+                self.output.cols = self.output.cols * self.parallelism_degre
+                # self.inputA.cols = self.inputA.cols * self.parallelism_degre
+        elif self.parallelism == "row_parallelism":
+            if self.parallelism_cost_flag == True:
+                self.parallelism_cost = 44444 #todo
+            self.inputA.cols = self.inputA.cols * self.parallelism_degre
+            if self.inputB != None:
+                self.inputB.rows = self.inputB.rows * self.parallelism_degre
