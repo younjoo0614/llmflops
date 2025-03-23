@@ -21,42 +21,22 @@ class Model:
         #weight matrix
         weight_dq = Matrix(model_config["d_emb"], model_config["q lora rank"])
         weight_dkv = Matrix(model_config["d_emb"], model_config["kv lora rank"])
-        weight_uq = Matrix(
-            model_config["q lora rank"],
-            model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_uk = Matrix(
-            model_config["kv lora rank"],
-            model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_uv = Matrix(
-            model_config["kv lora rank"],
-            model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_rq = Matrix(
-            model_config["q lora rank"],
-            model_config["n_heads"] * model_config["qk rope head dim"])
-        weight_rk = Matrix(model_config["d_emb"],
-                           model_config["qk rope head dim"])
-        weight_op = Matrix(
-            model_config["n_heads"] * model_config["qk nope head dim"],
-            model_config["d_emb"])
-        weight_gate = Matrix(model_config["d_emb"],
-                             model_config["intermediate dim"])
-        weight_up = Matrix(model_config["d_emb"],
-                           model_config["intermediate dim"])
-        weight_down = Matrix(model_config["intermediate dim"],
-                             model_config["d_emb"])
+        weight_uq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
+        weight_uk = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
+        weight_uv = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
+        weight_rq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk rope head dim"])
+        weight_rk = Matrix(model_config["d_emb"], model_config["qk rope head dim"])
+        weight_op = Matrix(model_config["n_heads"] * model_config["qk nope head dim"], model_config["d_emb"])
+        weight_gate = Matrix(model_config["d_emb"], model_config["intermediate dim"])
+        weight_up = Matrix(model_config["d_emb"], model_config["intermediate dim"])
+        weight_down = Matrix(model_config["intermediate dim"], model_config["d_emb"])
         weight_router = Matrix(model_config['d_emb'], model_config['n_experts'])
-        weight_gate_routed = Matrix(model_config['d_emb'],
-                                    model_config['moe intermediate dim'])
-        weight_up_routed = Matrix(model_config['d_emb'],
-                                  model_config['moe intermediate dim'])
-        weight_down_routed = Matrix(model_config['moe intermediate dim'],
-                                    model_config['d_emb'])
-        weight_gate_shared = Matrix(model_config['d_emb'],
-                                    model_config['moe intermediate dim'])
-        weight_up_shared = Matrix(model_config['d_emb'],
-                                  model_config['moe intermediate dim'])
-        weight_down_shared = Matrix(model_config['moe intermediate dim'],
-                                    model_config['d_emb'])
+        weight_gate_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
+        weight_up_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
+        weight_down_routed = Matrix(model_config['moe intermediate dim'], model_config['d_emb'])
+        weight_gate_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
+        weight_up_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
+        weight_down_shared = Matrix(model_config['moe intermediate dim'],model_config['d_emb'])
 
         #Activation matrix
         hidden_state = Matrix(1, 1, 1)
@@ -104,23 +84,16 @@ class Model:
             Layer("q_rope_w", compressed_q, weight_rq, ropped_q),
             Layer("k_rope", ropped_k, None, ropped_k),
             Layer("q_rope", ropped_q, None, ropped_q),
-            Layer("score", decompressed_q.concat(ropped_q, False),
-                  decompressed_k.concat(duplicated_ropped_k, False),
-                  mask_scale_softmax_result),
-            Layer("mask_scale_softmax", mask_scale_softmax_result, None,
-                  mask_scale_softmax_result),
-            Layer("context_head", mask_scale_softmax_result, decompressed_v,
-                  context_result),
+            Layer("score", decompressed_q.concat(ropped_q, False), decompressed_k.concat(duplicated_ropped_k, False), mask_scale_softmax_result),
+            Layer("mask_scale_softmax", mask_scale_softmax_result, None, mask_scale_softmax_result),
+            Layer("context_head", mask_scale_softmax_result, decompressed_v, context_result),
             Layer("out_proj", context_result, weight_op, out_proj_result),
-            Layer("residual_addition", out_proj_result, None,
-                  residual_addition_result),
-            Layer("post_attn_norm", residual_addition_result, None,
-                  post_attn_norm_result)
+            Layer("residual_addition", out_proj_result, None, residual_addition_result),
+            Layer("post_attn_norm", residual_addition_result, None, post_attn_norm_result)
         ]
 
         base_non_moe_ffn_layers = [
-            Layer("gate_proj", post_attn_norm_result, weight_gate,
-                  gate_proj_result),
+            Layer("gate_proj", post_attn_norm_result, weight_gate, gate_proj_result),
             Layer("up_proj", post_attn_norm_result, weight_up, up_proj_result),
             Layer("silu", up_proj_result, None, silu_result),
             Layer("down_proj", silu_result, weight_down, down_proj_result),
@@ -128,22 +101,15 @@ class Model:
         ]
 
         base_moe_ffn_layers = [
-            Layer("gate_shared", post_attn_norm_result, weight_gate_shared,
-                  gate_shared_result),
-            Layer("up_shared", post_attn_norm_result, weight_up_shared,
-                  up_shared_result),
+            Layer("gate_shared", post_attn_norm_result, weight_gate_shared, gate_shared_result),
+            Layer("up_shared", post_attn_norm_result, weight_up_shared, up_shared_result),
             Layer("silu_shared", up_shared_result, None, silu_shared_result),
-            Layer("down_shared", silu_shared_result, weight_down_shared,
-                  down_shared_result),
-            Layer("router", post_attn_norm_result, weight_router,
-                  routed_result),
-            Layer("gate_routed", post_attn_norm_result, weight_gate_routed,
-                  gate_routed_result),
-            Layer("up_routed", post_attn_norm_result, weight_up_routed,
-                  up_routed_result),
+            Layer("down_shared", silu_shared_result, weight_down_shared, down_shared_result),
+            Layer("router", post_attn_norm_result, weight_router, routed_result),
+            Layer("gate_routed", post_attn_norm_result, weight_gate_routed, gate_routed_result),
+            Layer("up_routed", post_attn_norm_result, weight_up_routed, up_routed_result),
             Layer("silu_routed", up_routed_result, None, silu_routed_result),
-            Layer("down_routed", silu_routed_result, weight_down_routed,
-                  down_routed_result),
+            Layer("down_routed", silu_routed_result, weight_down_routed, down_routed_result),
             Layer("residual_addition2", down_shared_result, None, result_vector)
         ]
 
@@ -406,11 +372,11 @@ class Model:
             if layer.name == "score layer for RoPE":
                 layer.output.rows = input_len * model_config["n_heads"]
             #reshape after q_rope
-            if layer.name == "q_rope" and decode_flag == True:
+            if layer.name == "q_rope" and decode_flag:
                 layer.output.rows = 128
                 layer.output.cols = 64
                 ropped_k.transpose()
-            elif layer.name == "q_rope" and decode_flag == False:
+            elif layer.name == "q_rope" and not decode_flag:
                 layer.output.rows = input_len * model_config["n_heads"]
                 layer.output.cols = model_config["qk rope head dim"]
                 ropped_k.transpose()
