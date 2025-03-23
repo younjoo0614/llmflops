@@ -9,7 +9,7 @@ class Model:
     def __init__(self, name):
         self.name = name
 
-    def base_layer(self, name, df, input_len, output_len, batch_size,
+    def base_layer(self, name, df, input_len, output_len, batch_size, tensor_parallelism_degree,
                    model_config, decode_flag, moe_flag):
 
         #input matrix
@@ -94,15 +94,15 @@ class Model:
 
         base_layers = [
             Layer("pre_attn_norm", input_matrix, None, hidden_state),
-            Layer("query_down", input_matrix, weight_dq, compressed_q),
-            Layer("attn_norm_1", compressed_q, None, compressed_q),
-            Layer("query_up", compressed_q, weight_uq, decompressed_q),
-            Layer("kv_down", hidden_state, weight_dkv, compressed_kv),
-            Layer("attn_norm_2", compressed_kv, None, compressed_kv),
-            Layer("k_up", compressed_kv, weight_uk, decompressed_k),
-            Layer("v_up", compressed_kv, weight_uv, decompressed_v),
-            Layer("k_rope_w", hidden_state, weight_rk, ropped_k),
-            Layer("q_rope_w", compressed_q, weight_rq, ropped_q),
+            Layer("query_down", input_matrix, weight_dq, compressed_q, "column_parallelism", tensor_parallelism_degree, False),
+            Layer("attn_norm_1", compressed_q, None, compressed_q, "column_parallelism", tensor_parallelism_degree, False), #parallelism 맞는지 확인필요
+            Layer("query_up", compressed_q, weight_uq, decompressed_q, "row_parallelism", tensor_parallelism_degree, True),
+            Layer("kv_down", hidden_state, weight_dkv, compressed_kv, "column_parallelism", tensor_parallelism_degree, False),
+            Layer("attn_norm_2", compressed_kv, None, compressed_kv, "column_parallelism", tensor_parallelism_degree, False), #확인
+            Layer("k_up", compressed_kv, weight_uk, decompressed_k, "row_parallelism", tensor_parallelism_degree, True),
+            Layer("v_up", compressed_kv, weight_uv, decompressed_v, "row_parallelism", tensor_parallelism_degree, True),
+            Layer("k_rope_w", hidden_state, weight_rk, ropped_k, "column_parallelism", tensor_parallelism_degree, True),
+            Layer("q_rope_w", compressed_q, weight_rq, ropped_q, "row_parallelism", tensor_parallelism_degree, True),
             Layer("k_rope", ropped_k, None, ropped_k),
             Layer("q_rope", ropped_q, None, ropped_q),
             Layer("score", decompressed_q.concat(ropped_q, False),
@@ -112,13 +112,12 @@ class Model:
                   mask_scale_softmax_result),
             Layer("context_head", mask_scale_softmax_result, decompressed_v,
                   context_result),
-            Layer("out_proj", context_result, weight_op, out_proj_result),
+            Layer("out_proj", context_result, weight_op, out_proj_result,"column_parallelism", tensor_parallelism_degree, True),
             Layer("residual_addition", out_proj_result, None,
                   residual_addition_result),
             Layer("post_attn_norm", residual_addition_result, None,
                   post_attn_norm_result)
         ]
-
         base_non_moe_ffn_layers = [
             Layer("gate_proj", post_attn_norm_result, weight_gate,
                   gate_proj_result),
@@ -172,6 +171,10 @@ class Model:
                     if layer.inputA.rows < 1:
                         layer.inputA.rows = 1
 
+            layer.apply_parallelism()
+            # print(layer.name)
+            # print(layer.inputA)
+            # print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
 
@@ -195,17 +198,25 @@ class Model:
                     concated_k = decompressed_k.concat(duplicated_ropped_k,
                                                        False)
 
-            if decode_flag == False:
+            #head parallelism 
+            if layer.name == "score" or layer.name == "context_head" or layer.name == "mask_scale_softmax":
+                temp_flops = layer.get_flops() / tensor_parallelism_degree
+                temp_Asize = int(layer.inputA.get_size() / tensor_parallelism_degree)
+                temp_Bsize = int(layer.inputB.get_size() / tensor_parallelism_degree if layer.inputB is not None else 0)
+                temp_Osize = int(layer.output.get_size() / tensor_parallelism_degree)
+                temp_op_per_byte = temp_flops / (temp_Asize+temp_Bsize+temp_Osize)
+                layer.op_per_byte = temp_op_per_byte
                 df.loc[len(df)] = [
                     layer.name,
-                    layer.get_flops(),
-                    layer.inputA.get_size(),
-                    layer.inputB.get_size() if layer.inputB is not None else "",
-                    layer.output.get_size(),
-                    layer.get_flops(),
-                    layer.get_op_per_byte(),
+                    temp_flops,
+                    temp_Asize,
+                    temp_Bsize,
+                    temp_Osize,
+                    temp_flops,
+                    temp_op_per_byte,
                     layer.get_execution_time()
                 ]
+                #context head paralleism cost 계산 추가 필요
             else:
                 df.loc[len(df)] = [
                     layer.name,
@@ -217,6 +228,30 @@ class Model:
                     layer.get_op_per_byte(),
                     layer.get_execution_time()
                 ]
+
+            # if decode_flag == False:
+            #     df.loc[len(df)] = [
+            #         layer.name,
+            #         layer.get_flops(),
+            #         layer.inputA.get_size(),
+            #         layer.inputB.get_size() if layer.inputB is not None else "",
+            #         layer.output.get_size(),
+            #         layer.get_flops(),
+            #         layer.get_op_per_byte(),
+            #         layer.get_execution_time()
+            #     ]
+            # else:
+            #     df.loc[len(df)] = [
+            #         layer.name,
+            #         layer.get_flops(),
+            #         layer.inputA.get_size(),
+            #         layer.inputB.get_size() if layer.inputB is not None else "",
+            #         layer.output.get_size(),
+            #         layer.get_flops(),
+            #         layer.get_op_per_byte(),
+            #         layer.get_execution_time()
+            #     ]
+            layer.reset_parallelism()
 
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "", "", "", ""]
@@ -403,9 +438,11 @@ class Model:
             elif layer.name == "score layer for RoPE" and decode_flag == True:
                 # layer.inputB.cols = layer.inputB.cols + input_len  + i
                 layer.inputB.cols = (output_len + 1) / 2 + input_len
-
+            
+            layer.apply_parallelism()
             result = layer.forward()
             layer.output.reshape(result)
+            layer.reset_parallelism()
             # print(layer.output)
 
             if layer.name == "score layer for RoPE":

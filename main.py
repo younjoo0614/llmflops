@@ -45,6 +45,10 @@ def main():
                         type=int,
                         required=True,
                         help="Model Num")
+    parser.add_argument("--tensor-parallelism-degree",
+                        type=int,
+                        required=True,
+                        help="Tensor-parallelism-degree")
 
     args = parser.parse_args()
     # print_layer_config(layer_config)
@@ -69,7 +73,7 @@ def main():
         "Execution_time"
     ])
     deepseek.base_layer("deepseek", deepseek_base, args.input_len,
-                        args.output_len, args.batch_size, model_config, False,
+                        args.output_len, args.batch_size, args.tensor_parallelism_degree, model_config, False,
                         False)
     deepseek_base.to_csv("./result/base/deepseek_base_prefill_dense.csv",
                          index=False,
@@ -77,41 +81,43 @@ def main():
 
     create_time_graph(deepseek_base, "/base/deepseek_base_prefill_dense")
 
-    # deepseek_base_prefill_moe = pd.DataFrame(columns=[
-    #     "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
-    #     "Execution_time"
-    # ])
-    # deepseek.base_layer("deepseek", deepseek_base_prefill_moe, args.input_len,
-    #                     args.output_len, args.batch_size, model_config, False,
-    #                     True)
-    # deepseek_base_prefill_moe.to_csv("./result/base/deepseek_base_prefill_moe.csv",
-    #                                  index=False,
-    #                                  encoding="utf-8")
-    # create_time_graph(deepseek_base_prefill_moe, "/base/deepseek_base_prefill_moe")
 
-    # deepseek_base_decode = pd.DataFrame(columns=[
-    #     "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
-    #     "Execution_time"
-    # ])
-    # deepseek.base_layer("deepseek", deepseek_base_decode, args.input_len,
-    #                     args.output_len, args.batch_size, model_config, True,
-    #                     False)
-    # deepseek_base_decode.to_csv("./result/base/deepseek_base_decode_dense.csv",
-    #                             index=False,
-    #                             encoding="utf-8")
-    # create_time_graph(deepseek_base_decode, "/base/deepseek_base_decode_dense")
+    
+    deepseek_base_prefill_moe = pd.DataFrame(columns=[
+        "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
+        "Execution_time"
+    ])
+    deepseek.base_layer("deepseek", deepseek_base_prefill_moe, args.input_len,
+                        args.output_len, args.batch_size, args.tensor_parallelism_degree, model_config, False,
+                        True)
+    deepseek_base_prefill_moe.to_csv("./result/base/deepseek_base_prefill_moe.csv",
+                                     index=False,
+                                     encoding="utf-8")
+    create_time_graph(deepseek_base_prefill_moe, "/base/deepseek_base_prefill_moe")
 
-    # deepseek_base_decode_moe = pd.DataFrame(columns=[
-    #     "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
-    #     "Execution_time"
-    # ])
-    # deepseek.base_layer("deepseek", deepseek_base_decode_moe, args.input_len,
-    #                     args.output_len, args.batch_size, model_config, True,
-    #                     True)
-    # deepseek_base_decode_moe.to_csv("./result/base/deepseek_base_decode_moe.csv",
-    #                                 index=False,
-    #                                 encoding="utf-8")
-    # create_time_graph(deepseek_base_decode_moe, "/base/deepseek_base_decode_moe")
+    deepseek_base_decode = pd.DataFrame(columns=[
+        "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
+        "Execution_time"
+    ])
+    deepseek.base_layer("deepseek", deepseek_base_decode, args.input_len,
+                        args.output_len, args.batch_size, args.tensor_parallelism_degree, model_config, True,
+                        False)
+    deepseek_base_decode.to_csv("./result/base/deepseek_base_decode_dense.csv",
+                                index=False,
+                                encoding="utf-8")
+    create_time_graph(deepseek_base_decode, "/base/deepseek_base_decode_dense")
+
+    deepseek_base_decode_moe = pd.DataFrame(columns=[
+        "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
+        "Execution_time"
+    ])
+    deepseek.base_layer("deepseek", deepseek_base_decode_moe, args.input_len,
+                        args.output_len, args.batch_size, args.tensor_parallelism_degree, model_config, True,
+                        True)
+    deepseek_base_decode_moe.to_csv("./result/base/deepseek_base_decode_moe.csv",
+                                    index=False,
+                                    encoding="utf-8")
+    create_time_graph(deepseek_base_decode_moe, "/base/deepseek_base_decode_moe")
 
     # df_w_uk_first = pd.DataFrame(columns=[
     #     "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
