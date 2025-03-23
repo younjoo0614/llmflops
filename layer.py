@@ -37,7 +37,7 @@ class Layer:
                 else: 
                     self.inputA.cols = self.inputA.cols / self.tp_degree
             elif self.tp == TPType.ROW:
-                self.inputA.cols = self.inputB.cols / self.tp_degree
+                self.inputA.cols = self.inputA.cols / self.tp_degree
                 if self.inputB: self.inputB.rows = self.inputB.rows / self.tp_degree
             elif self.tp == TPType.ROW_IN:
                 self.inputA.rows = self.inputA.rows / self.tp_degree
@@ -73,12 +73,11 @@ class Layer:
         elif "score" in self.name and "score layer for RoPE" != self.name and "score layer for NoPE" != self.name or "transposed" in self.name:
             result, self.flops = self.inputA.score_head(self.inputB, True)
 
-        elif "context" in self.name and "context_matmul" != self.name and "out_proj_context" != self.name:
+        elif "context" in self.name and "context_matmul" != self.name and "out_proj" != self.name:
             result, self.flops = self.inputA.context_head(self.inputB, True)
 
-        elif "out_proj_context" == self.name:
-
-            result, self.flops = self.inputA.out_proj_context_head(self.inputB, True)
+        elif "out_proj" in self.name:
+            result, self.flops = self.inputA.out_proj_head(self.inputB, True)
 
         else:
             result, self.flops = self.inputA.matmul(self.inputB, True)
@@ -108,9 +107,9 @@ class Layer:
             return (self.flops) / Layer.throughput /1e6
 
     def reset_parallelism(self):
-        if self.parallelism == None:
+        if self.tp == None:
             return
-        elif self.parallelism == "col":
+        elif self.tp == "col":
             if self.parallelism_cost_flag == True:
                 self.parallelism_cost = 44444 #todo
             if self.inputB != None:
@@ -119,7 +118,7 @@ class Layer:
             elif self.inputB == None:
                 self.output.cols = self.output.cols * self.parallelism_degre
                 # self.inputA.cols = self.inputA.cols * self.parallelism_degre
-        elif self.parallelism == "row":
+        elif self.tp == "row":
             if self.parallelism_cost_flag == True:
                 self.parallelism_cost = 44444 #todo
             self.inputA.cols = self.inputA.cols * self.parallelism_degre

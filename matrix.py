@@ -26,7 +26,7 @@ class Matrix:
 
     def matmul(self, B, real):
         if (self.cols != B.rows):
-            raise ValueError("Dimension does not match")
+            raise ValueError(f"Dimension does not match self.cols: {self.cols}, B.rows: {B.rows}")
         result = Matrix(self.rows, B.cols, self.batch)
         flops = 2 * self.batch * self.rows * B.rows * B.cols
         if real:
@@ -35,19 +35,26 @@ class Matrix:
 
     def score_head(self, B, real):
         B.transpose()
+        self.cols = self.cols / (config.NUM_HEADS / config.TP_DEGREE)
+        B.rows = B.rows / (config.NUM_HEADS / config.TP_DEGREE)
+
+        self.batch = self.batch * (config.NUM_HEADS / config.TP_DEGREE)
+        B.batch = B.batch * (config.NUM_HEADS / config.TP_DEGREE)
+
         if (self.cols != B.rows):
-            raise ValueError("Dimension does not match")
-        result = Matrix(self.rows, B.cols, self.batch * (config.NUM_HEADS / config.TP_DEGREE))
+            raise ValueError(f"Dimension does not match self.cols: {self.cols}, B.rows: {B.rows}")
+        result = Matrix(self.rows, B.cols, self.batch)
 
         flops = 2 * self.rows * self.cols / (config.NUM_HEADS / config.TP_DEGREE) * result.cols * result.batch
 
         if real:
             Matrix.total_flops = int(Matrix.total_flops) + int(flops)
-        B.transpose() # 이거 있어야 하는지 확인
         return result, flops
 
     def context_head(self, B, real):
-        result = Matrix(self.rows, B.cols / (config.NUM_HEADS / config.TP_DEGREE), self.batch)
+        B.cols = B.cols / (config.NUM_HEADS / config.TP_DEGREE)
+        B.batch = B.batch * (config.NUM_HEADS / config.TP_DEGREE)
+        result = Matrix(self.rows, B.cols, self.batch)
         flops = 2 * self.rows * self.cols * result.cols * result.batch
 
         if real:
@@ -55,9 +62,12 @@ class Matrix:
 
         return result, flops
 
-    def out_proj_context_head(self, B, real):
-        result = Matrix(self.rows, B.cols, self.batch)
-        flops = 2 * self.rows * self.cols * result.cols * result.batch
+    def out_proj_head(self, B, real):
+        self.cols = self.cols * config.NUM_HEADS / config.TP_DEGREE
+        B.rows = B.rows / config.TP_DEGREE
+        B.batch = B.batch * config.TP_DEGREE
+        result = Matrix(self.rows, B.cols, self.batch / (config.NUM_HEADS / config.TP_DEGREE))
+        flops = 2 * self.rows * self.cols * result.cols * result.batch + (config.TP_DEGREE - 1) * result.rows * result.cols
 
         if real:
             Matrix.total_flops = int(Matrix.total_flops) + int(flops)

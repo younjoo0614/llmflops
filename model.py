@@ -55,17 +55,17 @@ class Model:
         ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size)
         ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size)
         duplicated_ropped_k = Matrix(seq_len, model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
-        concated_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size * model_config[n_heads])
+        concated_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
         if decode_flag:
-            concated_k = Matrix((output_len + 1) / 2 + input_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size * model_config[n_heads])
-            scored_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size * model_config["n_heads"])
-            mask_scale_softmax_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size * model_config["n_heads"])
-            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size * model_config["n_heads"])
+            concated_k = Matrix((output_len + 1) / 2 + input_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
+            scored_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size)
+            mask_scale_softmax_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size)
+            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size)
         else:
-            concated_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size * model_config[n_heads])
-            scored_result = Matrix(seq_len, seq_len, batch_size * model_config["n_heads"])
-            mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size * model_config["n_heads"])
-            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size * model_config["n_heads"])
+            concated_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
+            scored_result = Matrix(seq_len, seq_len, batch_size)
+            mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size)
+            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size)
         out_proj_result = Matrix(seq_len, model_config["d_emb"], batch_size)
         residual_addition_result = Matrix(seq_len, model_config["d_emb"], batch_size)
         post_attn_norm_result = Matrix(seq_len, model_config["d_emb"], batch_size)
@@ -97,8 +97,8 @@ class Model:
             Layer("q_rope_w", compressed_q, weight_rq, ropped_q, TPType.COL, tp_degree),
             Layer("k_rope", ropped_k, None, ropped_k, None, tp_degree),
             Layer("q_rope", ropped_q, None, ropped_q, TPType.COL, tp_degree),
-            Layer("score", decompressed_q.concat(ropped_q, False), decompressed_k.concat(duplicated_ropped_k, False), mask_scale_softmax_result, TPType.HEAD_COL_COL, tp_degree),
-            Layer("mask_scale_softmax", mask_scale_softmax_result, None, mask_scale_softmax_result, TPType.NONE, tp_degree),
+            Layer("score", concated_q, concated_k, scored_result, TPType.HEAD_COL_COL, tp_degree),
+            Layer("mask_scale_softmax", scored_result, None, mask_scale_softmax_result, TPType.NONE, tp_degree),
             Layer("context_head", mask_scale_softmax_result, decompressed_v, context_result, TPType.COL, tp_degree),
             Layer("out_proj", context_result, weight_op, out_proj_result, TPType.ROW, tp_degree),
             Layer("residual_addition", out_proj_result, None, residual_addition_result, None, tp_degree),
@@ -149,28 +149,23 @@ class Model:
                     if layer.inputA.rows < 1:
                         layer.inputA.rows = 1
 
-            # print(layer.name)
-            # print(layer.inputA)
-            # print(layer.inputB)
+            print(layer.name)
+            print(layer.inputA)
+            print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
 
             if layer.name == "q_rope":
                 if decode_flag == False:
-                    duplicated_ropped_k = Matrix(
-                        input_len, model_config["qk rope head dim"] *
-                        model_config["n_heads"])
+                    duplicated_ropped_k = Matrix(input_len, model_config["qk rope head dim"] * model_config["n_heads"])
                     concated_q = decompressed_q.concat(ropped_q, False)
-                    concated_k = decompressed_k.concat(duplicated_ropped_k,
-                                                       False)
+                    concated_k = decompressed_k.concat(duplicated_ropped_k, False)
+
                 else:
                     # duplicated_ropped_k = Matrix((output_len+1)/2, model_config["qk rope head dim"]*model_config["n_heads"])
-                    duplicated_ropped_k = Matrix(
-                        1, model_config["qk rope head dim"] *
-                        model_config["n_heads"])
+                    duplicated_ropped_k = Matrix(1, model_config["qk rope head dim"] *  model_config["n_heads"])
                     concated_q = decompressed_q.concat(ropped_q, False)
-                    concated_k = decompressed_k.concat(duplicated_ropped_k,
-                                                       False)
+                    concated_k = decompressed_k.concat(duplicated_ropped_k, False)
 
             
             df.loc[len(df)] = [
@@ -206,7 +201,7 @@ class Model:
             #         layer.get_op_per_byte(),
             #         layer.get_execution_time()
             #     ]
-            layer.reset_parallelism()
+            # layer.reset_parallelism()
 
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "", "", "", ""]
@@ -248,7 +243,6 @@ class Model:
         weight_down_shared = Matrix(model_config['moe intermediate dim'], model_config['d_emb'])
 
         #Activation matrix
-        #Activation matrix
         if decode_flag:
             seq_len = 1
         else:
@@ -260,7 +254,7 @@ class Model:
         compressed_kv = Matrix(seq_len, model_config["kv lora rank"], batch_size)
         ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size)
         ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size)
-        mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size * model_config["n_heads"])
+        mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size)
 
         context_result = Matrix(seq_len*model_config['n_heads'], model_config["kv lora rank"], batch_size)
 
@@ -285,14 +279,14 @@ class Model:
         if decode_flag:
             score_NOPE_result = Matrix(seq_len*model_config['n_heads'], (output_len + 1) / 2 + input_len ,batch_size)
             score_ROPE_result = Matrix(seq_len*model_config['n_heads'], (output_len + 1) / 2, batch_size)
-            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size * model_config['n_heads'])
-            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size * model_config['n_heads'])
+            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size)
+            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size)
 
         else:
             score_NOPE_result = Matrix(seq_len*model_config['n_heads'], seq_len ,batch_size)
             score_ROPE_result = Matrix(seq_len*model_config['n_heads'], seq_len, batch_size)
-            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size * model_config['n_heads'])
-            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size * model_config['n_heads'])
+            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size )
+            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size )
 
         w_uk_first_layers = [
             Layer("pre_attn_norm", input_matrix, None, hidden_state, None, tp_degree),
@@ -311,7 +305,7 @@ class Model:
             Layer("mask_scale_softmax", score_ROPE_result, None,mask_scale_softmax_result, TPType.ROW_IN, tp_degree),
             Layer("context_matmul", mask_scale_softmax_result, compressed_kv, context_result, TPType.ROW_IN, tp_degree),
             Layer("v_up_proj_context", context_result, weight_uv, v_up_context_result, TPType.HEAD_ROW_COL, tp_degree),
-            Layer("out_proj_context", v_up_context_result, weight_op, out_proj_context_result, TPType.ROW, tp_degree),
+            Layer("out_proj", v_up_context_result, weight_op, out_proj_context_result, TPType.ROW, tp_degree),
             Layer("residual_addition", out_proj_context_result, None, residual_addition_result, None, tp_degree),
             Layer("post_attn_norm", residual_addition_result, None, post_attn_norm_result, tp_degree)
         ]
@@ -370,7 +364,7 @@ class Model:
             
             result = layer.forward()
             layer.output.reshape(result)
-            layer.reset_parallelism()
+            # layer.reset_parallelism()
             # print(layer.output)
 
             if layer.name == "score layer for RoPE":
