@@ -15,7 +15,7 @@ def load_device_config(device_config_file="./device_config.json"):
     with open(device_config_file, mode="r", encoding="utf-8") as file:
         device_config = json.load(file)
         global TP_DEGREE
-        TP_DEGREE = int(device_config["TP"])
+        TP_DEGREE = int(device_config["TP_DEGREE"])
 
 
 def create_layer_dataframe(layer_config):
