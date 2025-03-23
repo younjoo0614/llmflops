@@ -16,18 +16,29 @@ class Layer:
                  inputA: Matrix,
                  inputB: Matrix = None,
                  output: Matrix = None,
-                 parallelism = None,
-                 parallelism_degre = None,
+                 tp = None,
+                 tp_degree: int = 1,
                  parallelism_cost_flag = None):
         self.name = name
         self.inputA = inputA
         self.inputB = inputB
         self.output = output
         self.flops = None
-        self.parallelism = parallelism
-        self.parallelism_degre = parallelism_degre
+        self.tp = tp
+        self.tp_degree = tp_degree
         self.parallelism_cost_flag = parallelism_cost_flag
         self.parallelism_cost = None
+
+        if self.tp_degree > 1:
+            if self.tp == "col":
+                if self.inputB:
+                    self.inputB.cols = self.inputB.cols / self.tp_degree
+                else: 
+                    self.inputA.cols = self.inputA.cols / self.tp_degree
+            else:
+                self.inputA.cols = self.inputB.cols / self.tp_degree
+                if self.inputB: self.inputB.rows = self.inputB.rows / self.tp_degree
+
 
     def forward(self):
         if "norm" in self.name:
@@ -81,20 +92,6 @@ class Layer:
                 return (self.inputA.get_size() + self.output.get_size()) / Layer.hbm_bw / 1e3
         else:
             return (self.flops) / Layer.throughput /1e6
-
-    def apply_parallelism(self):
-        if self.parallelism == None:
-            return
-        elif self.parallelism == "column_parallelism":
-            if self.inputB != None:
-                self.inputB.cols = self.inputB.cols / self.parallelism_degre
-            elif self.inputB == None:
-                self.inputA.cols = self.inputA.cols / self.parallelism_degre
-
-        elif self.parallelism == "row_parallelism":
-            self.inputA.cols = self.inputA.cols / self.parallelism_degre
-            if self.inputB != None:
-                self.inputB.rows = self.inputB.rows / self.parallelism_degre
 
     def reset_parallelism(self):
         if self.parallelism == None:

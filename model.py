@@ -40,49 +40,60 @@ class Model:
         weight_down_shared = Matrix(model_config['moe intermediate dim'],model_config['d_emb'])
 
         #Activation matrix
-        hidden_state = Matrix(1, 1, 1)
-        compressed_q = Matrix(1, 1, 1)
-        decompressed_q = Matrix(1, 1, 1)
-        compressed_kv = Matrix(1, 1, 1)
-        decompressed_k = Matrix(1, 1, 1)
-        decompressed_v = Matrix(1, 1, 1)
-        ropped_k = Matrix(1, 1, 1)
-        ropped_q = Matrix(1, 1, 1)
-        duplicated_ropped_k = Matrix(1, 1, 1)
-        concated_q = Matrix(1, 1, 1)
-        concated_k = Matrix(1, 1, 1)
-        scored_result = Matrix(1, 1, 1)
-        mask_scale_softmax_result = Matrix(1, 1, 1)
-        context_result = Matrix(1, 1, 1)
-        out_proj_result = Matrix(1, 1, 1)
-        residual_addition_result = Matrix(1, 1, 1)
-        post_attn_norm_result = Matrix(1, 1, 1)
-        gate_proj_result = Matrix(1, 1, 1)
-        up_proj_result = Matrix(1, 1, 1)
-        silu_result = Matrix(1, 1, 1)
-        down_proj_result = Matrix(1, 1, 1)
-        result_vector = Matrix(1, 1, 1)
-        routed_result = Matrix(1, 1, 1)
-        gate_routed_result = Matrix(1, 1, 1)
-        up_routed_result = Matrix(1, 1, 1)
-        silu_routed_result = Matrix(1, 1, 1)
-        down_routed_result = Matrix(1, 1, 1)
-        gate_shared_result = Matrix(1, 1, 1)
-        up_shared_result = Matrix(1, 1, 1)
-        silu_shared_result = Matrix(1, 1, 1)
-        down_shared_result = Matrix(1, 1, 1)
+        if decode_flag:
+            seq_len = 1
+        else:
+            seq_len = input_len
+        
+        hidden_state = Matrix(seq_len, model_config["d_emb"], batch_size)
+        compressed_q = Matrix(seq_len, model_config["q lora rank"], batch_size)
+        decompressed_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
+        compressed_kv = Matrix(seq_len, model_config["kv lora rank"], batch_size)
+        decompressed_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
+        decompressed_v = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
+        ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size)
+        ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size)
+        duplicated_ropped_k = Matrix(seq_len, model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
+        concated_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size * model_config[n_heads])
+        if decode_flag:
+            concated_k = Matrix((output_len + 1) / 2 + input_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size * model_config[n_heads])
+            scored_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size * model_config[n_heads])
+            mask_scale_softmax_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size * model_config[n_heads])
+            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size * model_config[n_heads])
+        else:
+            concated_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size * model_config[n_heads])
+            scored_result = Matrix(seq_len, seq_len, batch_size * model_config["n_heads"])
+            mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size * model_config["n_heads"])
+            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size * model_config[n_heads])
+        out_proj_result = Matrix(seq_len, model_config["d_emb"], batch_size)
+        residual_addition_result = Matrix(seq_len, model_config["d_emb"], batch_size)
+        post_attn_norm_result = Matrix(seq_len, model_config["d_emb"], batch_size)
+        gate_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
+        up_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
+        silu_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
+        down_proj_result = Matrix(seq_len, model_config['d_emb'], batch_size)
+        result_vector = Matrix(seq_len, model_config['d_emb'], batch_size)
+        routed_result = Matrix(seq_len, model_config['n_experts'], batch_size)
+        gate_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
+        up_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
+        silu_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
+        down_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['d_emb'], batch_size)
+        gate_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
+        up_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
+        silu_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
+        down_shared_result = Matrix(seq_len, model_config['d_emb'], batch_size)
 
         base_layers = [
             Layer("pre_attn_norm", input_matrix, None, hidden_state),
-            Layer("query_down", input_matrix, weight_dq, compressed_q, "column_parallelism", tensor_parallelism_degree, False),
-            Layer("attn_norm_1", compressed_q, None, compressed_q, "column_parallelism", tensor_parallelism_degree, False), #parallelism 맞는지 확인필요
-            Layer("query_up", compressed_q, weight_uq, decompressed_q, "row_parallelism", tensor_parallelism_degree, True),
-            Layer("kv_down", hidden_state, weight_dkv, compressed_kv, "column_parallelism", tensor_parallelism_degree, False),
-            Layer("attn_norm_2", compressed_kv, None, compressed_kv, "column_parallelism", tensor_parallelism_degree, False), #확인
-            Layer("k_up", compressed_kv, weight_uk, decompressed_k, "row_parallelism", tensor_parallelism_degree, True),
-            Layer("v_up", compressed_kv, weight_uv, decompressed_v, "row_parallelism", tensor_parallelism_degree, True),
-            Layer("k_rope_w", hidden_state, weight_rk, ropped_k, "column_parallelism", tensor_parallelism_degree, True),
-            Layer("q_rope_w", compressed_q, weight_rq, ropped_q, "row_parallelism", tensor_parallelism_degree, True),
+            Layer("query_down", input_matrix, weight_dq, compressed_q, "col", tensor_parallelism_degree, False),
+            Layer("attn_norm_1", compressed_q, None, compressed_q, "col", tensor_parallelism_degree, False), #parallelism 맞는지 확인필요
+            Layer("query_up", compressed_q, weight_uq, decompressed_q, "row", tensor_parallelism_degree, True),
+            Layer("kv_down", hidden_state, weight_dkv, compressed_kv, "col", tensor_parallelism_degree, False),
+            Layer("attn_norm_2", compressed_kv, None, compressed_kv, "col", tensor_parallelism_degree, False), #확인
+            Layer("k_up", compressed_kv, weight_uk, decompressed_k, "row", tensor_parallelism_degree, True),
+            Layer("v_up", compressed_kv, weight_uv, decompressed_v, "row", tensor_parallelism_degree, True),
+            Layer("k_rope_w", hidden_state, weight_rk, ropped_k, "col", tensor_parallelism_degree, True),
+            Layer("q_rope_w", compressed_q, weight_rq, ropped_q, "row", tensor_parallelism_degree, True),
             Layer("k_rope", ropped_k, None, ropped_k),
             Layer("q_rope", ropped_q, None, ropped_q),
             Layer("score", decompressed_q.concat(ropped_q, False), decompressed_k.concat(duplicated_ropped_k, False), mask_scale_softmax_result),
@@ -137,7 +148,6 @@ class Model:
                     if layer.inputA.rows < 1:
                         layer.inputA.rows = 1
 
-            layer.apply_parallelism()
             # print(layer.name)
             # print(layer.inputA)
             # print(layer.inputB)
@@ -388,7 +398,6 @@ class Model:
                 # layer.inputB.cols = layer.inputB.cols + input_len  + i
                 layer.inputB.cols = (output_len + 1) / 2 + input_len
             
-            layer.apply_parallelism()
             result = layer.forward()
             layer.output.reshape(result)
             layer.reset_parallelism()
