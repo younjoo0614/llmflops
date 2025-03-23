@@ -96,7 +96,7 @@ class Layer:
     def reset_parallelism(self):
         if self.parallelism == None:
             return
-        elif self.parallelism == "column_parallelism":
+        elif self.parallelism == "col":
             if self.parallelism_cost_flag == True:
                 self.parallelism_cost = 44444 #todo
             if self.inputB != None:
