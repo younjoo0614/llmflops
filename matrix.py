@@ -32,6 +32,14 @@ class Matrix:
         if real:
             Matrix.total_flops = int(Matrix.total_flops) + int(flops)
         return result, flops
+    
+    def flash_attention(self, K, V, real):
+        result = Matrix(self.rows, V.cols, self.batch)
+        flops = 4 * self.rows * self.rows * self.cols + 16 * self.rows * self.rows # + 24 row^2 * col / 256K
+
+        if real: Matrix.total_flops = int (Matrix.total_flops) + flops
+        return result, flops 
+    
 
     def score_head(self, B, real):
         B.transpose()
@@ -64,9 +72,10 @@ class Matrix:
 
     def out_proj_head(self, B, real):
         self.cols = self.cols * config.NUM_HEADS / config.TP_DEGREE
+        self.batch = self.batch / (config.NUM_HEADS / config.TP_DEGREE)
         B.rows = B.rows / config.TP_DEGREE
         B.batch = B.batch * config.TP_DEGREE
-        result = Matrix(self.rows, B.cols, self.batch / (config.NUM_HEADS / config.TP_DEGREE))
+        result = Matrix(self.rows, B.cols, self.batch)
         flops = 2 * self.rows * self.cols * result.cols * result.batch + (config.TP_DEGREE - 1) * result.rows * result.cols
 
         if real:

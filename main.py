@@ -25,7 +25,6 @@ def main():
     parser.add_argument("--batch-size", type=int, required=True, help="Batch Size")
     parser.add_argument("--data-size", type=int, required=True, help="Data Size")
     parser.add_argument("--model-num", type=int, required=True, help="Model Num")
-    parser.add_argument("--dp-degree", type=int, default=1)
     args = parser.parse_args()
 
     model_config = load_model_config(args.model_num)
