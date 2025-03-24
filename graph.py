@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import matplotlib.patches as patches
+import config
 
 def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None, tensor_parallel=None, data_parallel=None):
     # 'residual' 또는 'norm'이 포함된 행 제거 (대소문자 구분 없이)
@@ -12,7 +13,7 @@ def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None
     # 'routed'가 포함된 행의 Execution_time 업데이트
     for i, row in df.iterrows():
         if 'routed' in row['Layer Name'].lower():
-            df.loc[i, 'Execution_time'] = row['Execution_time'] * 256
+            df.loc[i, 'Execution_time'] = row['Execution_time'] * (256 / (config.TP_DEGREE * config.DP_DEGREE))
 
     # Execution_time과 OP/B를 숫자로 변환
     df["Execution_time"] = pd.to_numeric(df["Execution_time"], errors="coerce")
