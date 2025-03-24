@@ -105,22 +105,3 @@ class Layer:
                 return (self.inputA.get_size() + self.output.get_size()) / Layer.hbm_bw / 1e3
         else:
             return (self.flops) / Layer.throughput /1e6
-
-    def reset_parallelism(self):
-        if self.tp == None:
-            return
-        elif self.tp == "col":
-            if self.parallelism_cost_flag == True:
-                self.parallelism_cost = 44444 #todo
-            if self.inputB != None:
-                self.output.cols = self.output.cols * self.parallelism_degre
-                self.inputB.cols = self.inputB.cols * self.parallelism_degre
-            elif self.inputB == None:
-                self.output.cols = self.output.cols * self.parallelism_degre
-                # self.inputA.cols = self.inputA.cols * self.parallelism_degre
-        elif self.tp == "row":
-            if self.parallelism_cost_flag == True:
-                self.parallelism_cost = 44444 #todo
-            self.inputA.cols = self.inputA.cols * self.parallelism_degre
-            if self.inputB != None:
-                self.inputB.rows = self.inputB.rows * self.parallelism_degre

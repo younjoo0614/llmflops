@@ -10,7 +10,7 @@ class Model:
     def __init__(self, name):
         self.name = name
 
-    def base_layer(self, name, df, input_len, output_len, batch_size, tp_degree,
+    def base_layer(self, name, df, input_len, output_len, batch_size, tp_degree, dp_degree,
                    model_config, decode_flag, moe_flag):
 
         #input matrix
@@ -141,13 +141,13 @@ class Model:
             #     if layer.inputA.rows < 1:
             #         layer.inputA.rows = 1
             elif layer.name == "gate_routed":
-                if decode_flag == False:
-                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
-                else:
-                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts']
+                if decode_flag:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts'] * dp_degree
                     layer.inputA.batch = 1
                     if layer.inputA.rows < 1:
                         layer.inputA.rows = 1
+                else:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts'] * dp_degree
 
             # print(layer.name)
             # print(layer.inputA)
@@ -210,7 +210,7 @@ class Model:
         df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
         Matrix.reset_flops()
 
-    def w_uk_first_layer(self, name, df, input_len, output_len, batch_size, tp_degree,
+    def w_uk_first_layer(self, name, df, input_len, output_len, batch_size, tp_degree, dp_degree,
                          model_config, decode_flag, moe_flag):
 
         #input matrix
@@ -337,7 +337,6 @@ class Model:
             w_uk_first_layers = w_uk_first_layers + w_uk_first_moe_ffn_layers
 
         for layer in w_uk_first_layers:
-
             if layer.name == "score layer for NoPE":
                 layer.inputB.transpose()
                 if decode_flag == True:
@@ -351,13 +350,13 @@ class Model:
                            layer.inputA.cols,
                            layer.inputA.batch * model_config['n_heads']))
             elif layer.name == "gate_routed":
-                if decode_flag == False:
-                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts']
-                else:
-                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts']
+                if decode_flag:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts'] * dp_degree
                     layer.inputA.batch = 1
                     if layer.inputA.rows < 1:
                         layer.inputA.rows = 1
+                else:
+                    layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts'] * dp_degree
             elif layer.name == "score layer for RoPE" and decode_flag == True:
                 layer.inputB.cols = (output_len + 1) / 2 + input_len
             
@@ -366,20 +365,20 @@ class Model:
             # print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
-            # layer.reset_parallelism()
             # print(layer.output)
 
             #if layer.name == "score layer for RoPE":
                 # layer.output.rows = input_len * model_config["n_heads"]
             #reshape after q_rope
             if layer.name == "q_rope" and decode_flag:
+                if decode_flag:
                 # layer.output.rows = 128
                 # layer.output.cols = 64
-                ropped_k.transpose()
-            elif layer.name == "q_rope" and not decode_flag:
-                layer.output.cols = layer.output.cols / (model_config["n_heads"] / tp_degree)
-                layer.output.batch = layer.output.batch * (model_config["n_heads"] / tp_degree)
-                ropped_k.transpose()
+                    ropped_k.transpose()
+                else:
+                    layer.output.cols = layer.output.cols / (model_config["n_heads"] / tp_degree)
+                    layer.output.batch = layer.output.batch * (model_config["n_heads"] / tp_degree)
+                    ropped_k.transpose()
             elif layer.name == "q_rope_w" and decode_flag:
                 layer.output.rows = layer.output.cols / model_config["qk rope head dim"]
                 layer.output.cols = model_config["qk rope head dim"]

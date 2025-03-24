@@ -1,2 +1,13 @@
-1. cal_ops.py 에 구현 별 layer 리스트 넣기
-2. config.py에서 글로벌 variable 만들기, global variable 이름 바꾸기
+* TODO
+1. FlashAttention, FlashMLA
+2. MoE 
+3. gate up 같이 하기
+
+* How to use
+```
+python main.py --input-len {input_len} --output-len {output_len} --batch-size {batch_size} --data-size {data-size}
+```
+
+Assuming DP * TP devices, DP * TP expert parallelism 
+
+Edit 'device_config.json' to apply parallelisms.
