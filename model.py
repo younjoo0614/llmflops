@@ -355,9 +355,9 @@ class Model:
             elif layer.name == "score layer for RoPE" and decode_flag == True:
                 layer.inputB.cols = (output_len + 1) / 2 + input_len
             
-            print(layer.name)
-            print(layer.inputA)
-            print(layer.inputB)
+            # print(layer.name)
+            # print(layer.inputA)
+            # print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
             # print(layer.output)
