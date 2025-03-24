@@ -105,17 +105,17 @@ def main():
     # deepseek.w_uk_first_layer("deepseek", df_w_uk_first, input_seq_len, output_seq_len, batch_size, model_config, False, False)
     # print(df_w_uk_first)
     # df_w_uk_first.to_csv("./result/deepseek_w_uk_first_prefill_dense.csv", index=False, encoding="utf-8")
-    # df_w_uk_first = pd.DataFrame(columns=[
-    #     "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
-    #     "Execution_time"
-    # ])
-    # deepseek.w_uk_first_layer("deepseek", df_w_uk_first, args.input_len,
-    #                           args.output_len, args.batch_size, model_config,
-    #                           False, False)
-    # df_w_uk_first.to_csv("./result/absorb/deepseek_w_uk_first_prefill_dense.csv",
-    #                      index=False,
-    #                      encoding="utf-8")
-    # create_time_graph(df_w_uk_first, "/absorb/deepseek_w_uk_first_prefill_dense")
+    df_w_uk_first = pd.DataFrame(columns=[
+        "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",
+        "Execution_time"
+    ])
+    deepseek.w_uk_first_layer("deepseek", df_w_uk_first, args.input_len, 
+                              args.output_len, config.TP_DEGREE, args.batch_size, model_config,
+                              False, False)
+    df_w_uk_first.to_csv("./result/absorb/deepseek_w_uk_first_prefill_dense.csv",
+                         index=False,
+                         encoding="utf-8")
+    create_time_graph(df_w_uk_first, "/absorb/deepseek_w_uk_first_prefill_dense")
 
     # df_w_uk_first_prefill_moe = pd.DataFrame(columns=[
     #     "Layer Name", "FLOPS", "InputA", "InputB", "Output", "FLOPS", "OP/B",

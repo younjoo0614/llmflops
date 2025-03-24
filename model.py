@@ -362,27 +362,29 @@ class Model:
                 # layer.inputB.cols = layer.inputB.cols + input_len  + i
                 layer.inputB.cols = (output_len + 1) / 2 + input_len
             
+            # print(layer.name)
+            # print(layer.inputA)
+            # print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
             # layer.reset_parallelism()
             # print(layer.output)
 
-            if layer.name == "score layer for RoPE":
-                layer.output.rows = input_len * model_config["n_heads"]
+            #if layer.name == "score layer for RoPE":
+                # layer.output.rows = input_len * model_config["n_heads"]
             #reshape after q_rope
             if layer.name == "q_rope" and decode_flag:
                 layer.output.rows = 128
                 layer.output.cols = 64
                 ropped_k.transpose()
             elif layer.name == "q_rope" and not decode_flag:
-                layer.output.rows = input_len * model_config["n_heads"]
-                layer.output.cols = model_config["qk rope head dim"]
+                layer.output.cols = layer.output.cols / (model_config["n_heads"] / tp_degree)
+                layer.output.batch = layer.output.batch * (model_config["n_heads"] / tp_degree)
                 ropped_k.transpose()
             if layer.name == "score layer for RoPE":
-                if decode_flag == False:
-                    layer.output.rows = input_len * model_config["n_heads"]
-                else:
+                if decode_flag :
                     layer.output.rows = model_config["n_heads"]
+                    
             if layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
 
