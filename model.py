@@ -149,9 +149,9 @@ class Model:
                     if layer.inputA.rows < 1:
                         layer.inputA.rows = 1
 
-            print(layer.name)
-            print(layer.inputA)
-            print(layer.inputB)
+            # print(layer.name)
+            # print(layer.inputA)
+            # print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
 
@@ -174,7 +174,6 @@ class Model:
                 layer.inputA.get_size(),
                 layer.inputB.get_size() if layer.inputB is not None else "",
                 layer.output.get_size(),
-                layer.get_flops(),
                 layer.get_op_per_byte(),
                 layer.get_execution_time()
             ]
@@ -204,7 +203,7 @@ class Model:
             # layer.reset_parallelism()
 
         total_flops = df["FLOPS"].sum()
-        df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "", "", "", ""]
+        df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "",  "", ""]
         df["Execution_time"] = pd.to_numeric(df["Execution_time"], errors="coerce")
         total_time = df["Execution_time"].sum()
         df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100
@@ -395,7 +394,6 @@ class Model:
                     layer.inputA.get_size(),
                     layer.inputB.get_size() if layer.inputB is not None else "",
                     layer.output.get_size(),
-                    layer.get_flops(),
                     layer.get_op_per_byte(),
                     layer.get_execution_time()
                 ]
@@ -406,13 +404,12 @@ class Model:
                     layer.inputA.get_size(),
                     layer.inputB.get_size() if layer.inputB is not None else "",
                     layer.output.get_size(),
-                    layer.get_flops(),
                     layer.get_op_per_byte(),
                     layer.get_execution_time()
                 ]
 
         total_flops = df["FLOPS"].sum()
-        df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "", "", "", ""]
+        df.loc[len(df)] = ["Total FLOPS", total_flops, "",  "", "", "", ""]
         df["Execution_time"] = pd.to_numeric(df["Execution_time"], errors="coerce")
         total_time = df["Execution_time"].sum()
         df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100

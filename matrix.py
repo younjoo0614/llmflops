@@ -46,7 +46,6 @@ class Matrix:
         result = Matrix(self.rows, B.cols, self.batch)
 
         flops = 2 * self.rows * self.cols * result.cols * result.batch
-        print(flops)
         if real:
             Matrix.total_flops = int(Matrix.total_flops) + int(flops)
         return result, flops
