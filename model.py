@@ -344,11 +344,6 @@ class Model:
                     layer.inputB.cols = (output_len + 1) / 2 + input_len
             elif layer.name == "context_matmul":
                 layer.inputB.transpose()
-            elif layer.name == "v_up_proj_context":
-                layer.inputA.reshape(
-                    Matrix(layer.inputA.rows / model_config['n_heads'],
-                           layer.inputA.cols,
-                           layer.inputA.batch * model_config['n_heads']))
             elif layer.name == "gate_routed":
                 if decode_flag:
                     layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts'] * dp_degree
