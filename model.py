@@ -252,7 +252,8 @@ class Model:
         decompressed_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
         compressed_kv = Matrix(seq_len, model_config["kv lora rank"], batch_size)
         ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size)
-        ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size)
+        if decode_flag == False: ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size)
+        else: ropped_q = Matrix(model_config['n_heads'], model_config['qk rope head dim'] ,batch_size)
         mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size)
 
         context_result = Matrix(seq_len*model_config['n_heads'], model_config["kv lora rank"], batch_size)
@@ -358,7 +359,6 @@ class Model:
                     if layer.inputA.rows < 1:
                         layer.inputA.rows = 1
             elif layer.name == "score layer for RoPE" and decode_flag == True:
-                # layer.inputB.cols = layer.inputB.cols + input_len  + i
                 layer.inputB.cols = (output_len + 1) / 2 + input_len
             
             # print(layer.name)
@@ -373,16 +373,18 @@ class Model:
                 # layer.output.rows = input_len * model_config["n_heads"]
             #reshape after q_rope
             if layer.name == "q_rope" and decode_flag:
-                layer.output.rows = 128
-                layer.output.cols = 64
+                # layer.output.rows = 128
+                # layer.output.cols = 64
                 ropped_k.transpose()
             elif layer.name == "q_rope" and not decode_flag:
                 layer.output.cols = layer.output.cols / (model_config["n_heads"] / tp_degree)
                 layer.output.batch = layer.output.batch * (model_config["n_heads"] / tp_degree)
                 ropped_k.transpose()
-            if layer.name == "score layer for RoPE":
-                if decode_flag :
-                    layer.output.rows = model_config["n_heads"]
+            elif layer.name == "q_rope_w" and decode_flag:
+                layer.output.rows = layer.output.cols / model_config["qk rope head dim"]
+                layer.output.cols = model_config["qk rope head dim"]
+
+
                     
             if layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
