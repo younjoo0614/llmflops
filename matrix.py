@@ -34,8 +34,12 @@ class Matrix:
         return result, flops
     
     def flash_attention(self, K, V, real):
+        self.cols = self.cols / (config.NUM_HEADS / config.TP_DEGREE)
+        self.batch = self.batch * (config.NUM_HEADS / config.TP_DEGREE)
+        
         result = Matrix(self.rows, V.cols, self.batch)
-        flops = 4 * self.rows * self.rows * self.cols + 16 * self.rows * self.rows # + 24 row^2 * col / 256K
+
+        flops = (4 * self.rows * self.rows * self.cols + 16 * self.rows * self.rows + 24 * self.rows * self.rows * self.cols / config.SH_MEM) * self.batch  # + 24 row^2 * col / 256K
 
         if real: Matrix.total_flops = int (Matrix.total_flops) + flops
         return result, flops 
