@@ -72,6 +72,7 @@ class Model:
         out_proj_result = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
         residual_addition_result = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
         post_attn_norm_result = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
+        post_attn_norm_result_shared = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
         gate_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
         up_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
         silu_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
@@ -117,8 +118,8 @@ class Model:
         ]
 
         base_moe_ffn_layers = [
-            Layer("gate_shared", post_attn_norm_result, weight_gate_shared, gate_shared_result),
-            Layer("up_shared", post_attn_norm_result, weight_up_shared, up_shared_result),
+            Layer("gate_shared", post_attn_norm_result_shared, weight_gate_shared, gate_shared_result),
+            Layer("up_shared", post_attn_norm_result_shared, weight_up_shared, up_shared_result),
             Layer("silu_shared", up_shared_result, None, silu_shared_result),
             Layer("down_shared", silu_shared_result, weight_down_shared, down_shared_result),
             Layer("router", post_attn_norm_result, weight_router, routed_result),
@@ -141,15 +142,9 @@ class Model:
             else:
                 if layer.name == "flash_attention":
                     continue
-            if layer.name == "score" and decode_flag == True:
+            if layer.name == "score" or layer.name == "context_head" and decode_flag == True:
                 layer.inputB.rows = (output_len + 1) / 2 + input_len
-            elif layer.name == "context_head" and decode_flag == True:
-                layer.inputB.rows = (output_len + 1) / 2 + input_len
-            # elif layer.name == "gate_routed":
-            #     layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts']
-            #     layer.inputA.batch = 1
-            #     if layer.inputA.rows < 1:
-            #         layer.inputA.rows = 1
+
             elif layer.name == "gate_routed":
                 if decode_flag:
                     layer.inputA.rows = layer.inputA.rows * model_config['top-k'] * layer.inputA.batch / model_config['n_experts'] * dp_degree
@@ -170,14 +165,18 @@ class Model:
                     duplicated_ropped_k = Matrix(input_len, model_config["qk rope head dim"] * model_config["n_heads"])
                     concated_q = decompressed_q.concat(ropped_q, False)
                     concated_k = decompressed_k.concat(duplicated_ropped_k, False)
-                    #print("concatted", concated_q)
-
+                   
                 else:
-                    # duplicated_ropped_k = Matrix((output_len+1)/2, model_config["qk rope head dim"]*model_config["n_heads"])
                     duplicated_ropped_k = Matrix(1, model_config["qk rope head dim"] *  model_config["n_heads"])
                     concated_q = decompressed_q.concat(ropped_q, False)
                     concated_k = decompressed_k.concat(duplicated_ropped_k, False)
-
+                    
+            elif layer.name == "post_attn_norm":
+                post_attn_norm_result_shared.reshape(post_attn_norm_result)
+                print(post_attn_norm_result)
+                
+                post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
+                print(post_attn_norm_result_shared)
             
             df.loc[len(df)] = [
                 layer.name,
@@ -195,35 +194,16 @@ class Model:
                     "Communication Cost", 0, "", "", "", "", layer.parallelism_cost
                 ]
 
-            # if decode_flag == False:
-            #     df.loc[len(df)] = [
-            #         layer.name,
-            #         layer.get_flops(),
-            #         layer.inputA.get_size(),
-            #         layer.inputB.get_size() if layer.inputB is not None else "",
-            #         layer.output.get_size(),
-            #         layer.get_flops(),
-            #         layer.get_op_per_byte(),
-            #         layer.get_execution_time()
-            #     ]
-            # else:
-            #     df.loc[len(df)] = [
-            #         layer.name,
-            #         layer.get_flops(),
-            #         layer.inputA.get_size(),
-            #         layer.inputB.get_size() if layer.inputB is not None else "",
-            #         layer.output.get_size(),
-            #         layer.get_flops(),
-            #         layer.get_op_per_byte(),
-            #         layer.get_execution_time()
-            #     ]
-
+            
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "",  "", ""]
         df["Execution_time"] = pd.to_numeric(df["Execution_time"], errors="coerce")
         total_time = df["Execution_time"].sum()
         df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100
         df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
+        total_kv_size = batch_size * (model_config['n_heads']*(input_len + output_len) * ((model_config['qk rope head dim'] + model_config['qk nope head dim']) + model_config['v head dim'])) * data_size * 61
+        df.loc[len(df)] = ["KV Cache", "", "", "", total_kv_size/1024/1024/1024, "", "", ""]
+
         Matrix.reset_flops()
 
     def w_uk_first_layer(self, name, df, input_len, output_len, batch_size, data_size, tp_degree, dp_degree,
@@ -428,5 +408,9 @@ class Model:
         total_time = df["Execution_time"].sum()
         df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100
         df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
+        total_kv_size = batch_size * ((input_len + output_len) * (model_config['qk rope head dim'] + model_config['kv lora rank'])) * data_size * 61
+        df.loc[len(df)] = ["KV Cache", "", "", "",( total_kv_size/1024/1024/1024), "", "", ""]
 
         Matrix.reset_flops()
+
+
