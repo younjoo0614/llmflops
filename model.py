@@ -173,7 +173,10 @@ class Model:
                     
             elif layer.name == "post_attn_norm":
                 post_attn_norm_result_shared.reshape(post_attn_norm_result)
-                post_attn_norm_result_shared.batch / tp_degree
+                print(post_attn_norm_result)
+                
+                post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
+                print(post_attn_norm_result_shared)
             
             df.loc[len(df)] = [
                 layer.name,
