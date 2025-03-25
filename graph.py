@@ -182,6 +182,9 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
     def get_color(layer_name):
         lname = layer_name.lower()
 
+        if 'residual' in lname or 'norm' in lname:
+            return 'firebrick'  # 빨간색
+
         # MoE FFN 계열
         moe_keywords = ['gate_shared', 'up_shared', 'silu_shared', 'down_shared',
                         'router', 'gate_routed', 'up_routed', 'silu_routed', 'down_routed']
@@ -197,26 +200,25 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
         attn_keywords = [
             'pre_attn_norm', 'query_down', 'query_up', 'kv_down', 'k_up', 'v_up',
             'k_rope', 'q_rope', 'rope', 'score', 'mask', 'context',
-            'out_proj', 'residual_addition', 'post_attn_norm',
+            'out_proj', 'residual_addition', 'post_attn_norm', "flash_attention",
             'transposed', 'score layer', 'context_matmul', 'v_up_proj_context', "score layer for RoPE","score layer for NoPE", "mask_scale_softmax" 
         ]
         if any(k in lname for k in attn_keywords):
             return 'skyblue'
 
-        # 기타
         return 'lightgrey'
+
 
     # 각 레이어의 시작 위치(left)를 계산 (전체 100% 기준)
     cumulative = np.insert(np.cumsum(df["Percentage"].values), 0, 0)
     lefts = cumulative[:-1]
 
     # 그래프 크기를 키움
-    #fig, ax = plt.subplots(figsize=(20, 8))
+    fig, ax = plt.subplots(figsize=(20, 8))
 
 
 
-    if "decode" in name:
-    #if True:    
+    if "decode_base" in name:
         ax.set_xlim(0, 100)
 
         # 더 작은 값도 잘 보이게 Y축 하한을 -1 (log10(0.1))로 설정
@@ -244,28 +246,35 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
         exec_time_us = row["Execution_time"]
         color = get_color(row["Layer Name"])
 
+        is_comm_cost = "communication cost" in row["Layer Name"].lower()
+
+        if is_comm_cost:
+            # Communication Cost일 경우 Arithmetic Intensity를 가장 크게 설정
+            transformed_value = max_tick
+            color = 'orange'  # 색은 black or 원하는 색
+            hatch = None
+        else:
+            hatch = None
+            
         if pd.notna(transformed_value) and pd.notna(exec_time_us):
             height = transformed_value - ymin
             rect = patches.Rectangle((lefts[i], ymin), perc, height,
-                                    edgecolor='black', facecolor=color)
+                                    edgecolor='black', facecolor=color, hatch=hatch)
             ax.add_patch(rect)
 
             exec_time_ms = exec_time_us / 1000
             label_text = f"{row['Layer Name']}\n({perc:.1f}%, {exec_time_ms:.2f}ms)"
 
-            if perc >= 2:
-                # 넓은 막대일 경우 가로 출력
-                if perc >= 6:
-                    ax.text(lefts[i] + perc / 2, ymin + height * 0.95,
-                            label_text,
-                            ha='center', va='top', fontsize=12, rotation=0, color='black')
-                else:
-                    # 좁은 막대일 경우 세로 출력
-                    ax.text(lefts[i] + perc / 2, ymin + height / 2,
-                            label_text,
-                            ha='center', va='center', fontsize=12, rotation=90, color='black')
-
-
+            # ✅ 항상 막대 내부에 출력 (Communication Cost 포함)
+            if perc >= 6:
+                ax.text(lefts[i] + perc / 2, ymin + height * 0.95,
+                        label_text,
+                        ha='center', va='top', fontsize=12, rotation=0, color='black')
+            elif perc >= 2:
+                ax.text(lefts[i] + perc / 2, ymin + height / 2,
+                        label_text,
+                        ha='center', va='center', fontsize=12, rotation=90, color='black')
+                
     # Balance point 라인
     balance_point_log = np.log10(295)
     ax.axhline(y=balance_point_log, color='red', linestyle='--', linewidth=1.5)

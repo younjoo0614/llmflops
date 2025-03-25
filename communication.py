@@ -13,4 +13,5 @@ def get_allreduce_cost(tp_degree: int, tensor_size_bytes: int) -> float:
     hop_count = (tp_degree - 1) * 2
 
     total_time_us = time_per_hop_us * hop_count
-    return int(total_time_us)
+    # print(total_time_us)
+    return (total_time_us)

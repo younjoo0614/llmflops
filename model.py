@@ -190,7 +190,7 @@ class Model:
             ]
 
             layer.get_communication_cost()
-            if layer.parallelism_cost: 
+            if layer.parallelism_cost != None:
                 df.loc[len(df)] = [
                     "Communication Cost", 0, "", "", "", "", layer.parallelism_cost
                 ]
@@ -418,7 +418,7 @@ class Model:
                 ]
 
             layer.get_communication_cost()
-            if layer.parallelism_cost: 
+            if layer.parallelism_cost != None:
                 df.loc[len(df)] = [
                     "Communication Cost", 0, "", "", "", "", layer.parallelism_cost
                 ]
