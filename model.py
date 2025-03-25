@@ -101,7 +101,7 @@ class Model:
             Layer("q_rope_w", compressed_q, weight_rq, ropped_q, TPType.COL, tp_degree),
             Layer("k_rope", ropped_k, None, ropped_k, None, tp_degree),
             Layer("q_rope", ropped_q, None, ropped_q, TPType.COL, tp_degree),
-            Layer("flash_attention", concated_q, concated_k, context_result, TPType.HEAD_COL_COL, tp_degree) if fa_flag else Layer("score", concated_q, concated_k, scored_result, TPType.HEAD_COL_COL, tp_degree),
+            Layer("flash_attention", concated_q, concated_k, context_result, TPType.HEAD_COL_COL, tp_degree) if fa_flag and not decode_flag else Layer("score", concated_q, concated_k, scored_result, TPType.HEAD_COL_COL, tp_degree),
             Layer("mask_scale_softmax", scored_result, None, mask_scale_softmax_result, TPType.NONE, tp_degree),
             Layer("context_head", mask_scale_softmax_result, decompressed_v, context_result, TPType.COL, tp_degree),
             Layer("out_proj", context_result, weight_op, out_proj_result, TPType.ROW, tp_degree, parallelism_cost_flag=True),
