@@ -132,9 +132,13 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
     ]
     ax.legend(handles=legend_elements, loc='upper right', fontsize=10)
 
-    # 구성 정보 텍스트
-    config_text = f"Input: {input_len}, Output: {output_len}, Batch: {batch_size}\n" \
-                  f"TP: {tensor_parallel}, DP: {data_parallel}"
+    total_time_ms = total_time / 1000  # μs → ms
+    config_text = (
+        f"Input: {input_len}, Output: {output_len}, Batch: {batch_size}\n"
+        f"TP: {tensor_parallel}, DP: {data_parallel}, Total Time: {total_time_ms:.2f} ms"
+    )
+
+    # 그래프 오른쪽 상단에 추가
     ax.text(50, max_tick + 0.3, config_text,
             ha='center', va='bottom', fontsize=11,
             bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5'))
