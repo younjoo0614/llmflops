@@ -23,8 +23,8 @@ def main():
     parser.add_argument("--input-len", type=int, required=True, help="Input Sequence Length")
     parser.add_argument("--output-len", type=int, required=True, help="Output Sequence Length")
     parser.add_argument("--batch-size", type=int, required=True, help="Batch Size")
-    parser.add_argument("--data-size", type=int, required=True, help="Data Size")
-    parser.add_argument("--model-num", type=int, required=True, help="Model Num")
+    parser.add_argument("--data-size", type=int, help="Data Size", default=2)
+    parser.add_argument("--model-num", type=int, help="Model Num", default=0)
     parser.add_argument("--flash-attention", action="store_true", default=False)
     parser.add_argument("--flash-mla", action="store_true", default=False)
     args = parser.parse_args()
@@ -39,7 +39,8 @@ def main():
     print(f"Batch Size per Device: {args.batch_size / config.DP_DEGREE}")
     print(f"Data Size: {args.data_size}")
     print(f"Model Num: {args.model_num}")
-    print(f"Model Name: {model_config['Model Name']}\n\n")
+    print(f"Model Name: {model_config['Model Name']}")
+    print(f"Flash Attention: {args.flash_attention}\n\n")
 
     deepseek = Model("deepseek")
 
@@ -50,7 +51,7 @@ def main():
     batch_size_per_device = int(args.batch_size / config.DP_DEGREE)
 
     deepseek.base_layer("deepseek", deepseek_base, args.input_len, args.output_len, batch_size_per_device,
-                        config.TP_DEGREE, config.DP_DEGREE, model_config, False, False)
+                        config.TP_DEGREE, config.DP_DEGREE, model_config, False, False, fa_flag=args.flash_attention)
     deepseek_base.to_csv("./result/base/deepseek_base_prefill_dense.csv", index=False, encoding="utf-8")
     create_time_graph(deepseek_base, "/base/deepseek_base_prefill_dense",    input_len=args.input_len,
     output_len=args.output_len,
@@ -62,7 +63,7 @@ def main():
         "Layer Name", "FLOPS", "InputA", "InputB", "Output", "OP/B", "Execution_time"
     ])
     deepseek.base_layer("deepseek", deepseek_base_prefill_moe, args.input_len, args.output_len, batch_size_per_device,
-                        config.TP_DEGREE, config.DP_DEGREE, model_config, False, True)
+                        config.TP_DEGREE, config.DP_DEGREE, model_config, False, True, fa_flag=args.flash_attention)
     deepseek_base_prefill_moe.to_csv("./result/base/deepseek_base_prefill_moe.csv", index=False, encoding="utf-8")
     create_time_graph(deepseek_base_prefill_moe, "/base/deepseek_base_prefill_moe",    input_len=args.input_len,
     output_len=args.output_len,
@@ -74,7 +75,7 @@ def main():
         "Layer Name", "FLOPS", "InputA", "InputB", "Output", "OP/B", "Execution_time"
     ])
     deepseek.base_layer("deepseek", deepseek_base_decode, args.input_len, args.output_len, batch_size_per_device,
-                        config.TP_DEGREE, config.DP_DEGREE, model_config, True, False)
+                        config.TP_DEGREE, config.DP_DEGREE, model_config, True, False, fa_flag=args.flash_attention)
     deepseek_base_decode.to_csv("./result/base/deepseek_base_decode_dense.csv", index=False, encoding="utf-8")
     create_time_graph(deepseek_base_decode, "/base/deepseek_base_decode_dense",    input_len=args.input_len,
     output_len=args.output_len,
@@ -86,7 +87,7 @@ def main():
         "Layer Name", "FLOPS", "InputA", "InputB", "Output", "OP/B", "Execution_time"
     ])
     deepseek.base_layer("deepseek", deepseek_base_decode_moe, args.input_len, args.output_len, batch_size_per_device,
-                        config.TP_DEGREE, config.DP_DEGREE, model_config, True, True)
+                        config.TP_DEGREE, config.DP_DEGREE, model_config, True, True, fa_flag=args.flash_attention)
     deepseek_base_decode_moe.to_csv("./result/base/deepseek_base_decode_moe.csv", index=False, encoding="utf-8")
     create_time_graph(deepseek_base_decode_moe, "/base/deepseek_base_decode_moe",    input_len=args.input_len,
     output_len=args.output_len,

@@ -11,7 +11,7 @@ class Model:
         self.name = name
 
     def base_layer(self, name, df, input_len, output_len, batch_size, tp_degree, dp_degree,
-                   model_config, decode_flag, moe_flag):
+                   model_config, decode_flag, moe_flag, fa_flag):
 
         #input matrix
         if decode_flag == False:  #prefill
@@ -97,7 +97,7 @@ class Model:
             Layer("q_rope_w", compressed_q, weight_rq, ropped_q, TPType.COL, tp_degree),
             Layer("k_rope", ropped_k, None, ropped_k, None, tp_degree),
             Layer("q_rope", ropped_q, None, ropped_q, TPType.COL, tp_degree),
-            Layer("score", concated_q, concated_k, scored_result, TPType.HEAD_COL_COL, tp_degree),
+            Layer("flash_attention", concated_q, concated_k, context_result, TPType.HEAD_COL_COL, tp_degree) if fa_flag else Layer("score", concated_q, concated_k, scored_result, TPType.HEAD_COL_COL, tp_degree),
             Layer("mask_scale_softmax", scored_result, None, mask_scale_softmax_result, TPType.NONE, tp_degree),
             Layer("context_head", mask_scale_softmax_result, decompressed_v, context_result, TPType.COL, tp_degree),
             Layer("out_proj", context_result, weight_op, out_proj_result, TPType.ROW, tp_degree),
@@ -131,6 +131,12 @@ class Model:
             base_layers = base_layers + base_moe_ffn_layers
 
         for layer in base_layers:
+            if fa_flag:
+                if layer.name in  ["score", "mask_scale_softmax", "context_head"]:
+                    continue
+            else:
+                if layer.name == "flash_attention":
+                    continue
             if layer.name == "score" and decode_flag == True:
                 layer.inputB.rows = (output_len + 1) / 2 + input_len
             elif layer.name == "context_head" and decode_flag == True:
@@ -148,7 +154,7 @@ class Model:
                         layer.inputA.rows = 1
                 else:
                     layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts'] * dp_degree
-
+            
             # print(layer.name)
             # print(layer.inputA)
             # print(layer.inputB)
@@ -160,6 +166,7 @@ class Model:
                     duplicated_ropped_k = Matrix(input_len, model_config["qk rope head dim"] * model_config["n_heads"])
                     concated_q = decompressed_q.concat(ropped_q, False)
                     concated_k = decompressed_k.concat(duplicated_ropped_k, False)
+                    print("concatted", concated_q)
 
                 else:
                     # duplicated_ropped_k = Matrix((output_len+1)/2, model_config["qk rope head dim"]*model_config["n_heads"])
@@ -200,7 +207,6 @@ class Model:
             #         layer.get_op_per_byte(),
             #         layer.get_execution_time()
             #     ]
-            # layer.reset_parallelism()
 
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops, "", "", "",  "", ""]

@@ -6,12 +6,12 @@ from tp_type import TPType
 with open("device_config.json", "r") as file:
     data = json.load(file)
 
-
 class Layer:
     throughput = data["TFLOPS"]
     hbm_bw = data["HBM_BW"]
     lp_bw = data["LPDDR_BW"]
-
+    shmem_size = data["SH_MEM"]
+    
     def __init__(self,
                  name,
                  inputA: Matrix,
@@ -48,8 +48,8 @@ class Layer:
                 self.inputA.cols = self.inputA.cols / self.tp_degree
                 self.inputB.rows = self.inputB.rows / self.tp_degree
             elif self.tp == TPType.HEAD_COL_COL:
-                self.inputA.cols = self.inputA.cols / self.tp_degree
-                self.inputB.cols = self.inputB.cols / self.tp_degree
+                self.inputA.cols = self.inputA.cols / tp_degree
+                self.inputB.cols = self.inputB.cols / tp_degree
             else: # tp == None
                 pass
 
@@ -78,6 +78,9 @@ class Layer:
 
         elif "out_proj" in self.name:
             result, self.flops = self.inputA.out_proj_head(self.inputB, True)
+        
+        elif "flash_attention" in self.name:
+            result, self.flops = self.inputA.flash_attention(self.inputB, True)
 
         else:
             result, self.flops = self.inputA.matmul(self.inputB, True)
@@ -85,7 +88,13 @@ class Layer:
         return result
 
     def get_op_per_byte(self):
-        if self.inputB is not None:
+        if self.name == "flash_attention":
+            byte = 2 * self.inputB.rows * self.inputB.cols * self.inputB.data_size
+            byte = byte + 3 * self.inputA.rows * self.inputA.rows + (16 * self.inputA.rows * self.inputA.rows * self.inputA.cols / Layer.shmem_size) * self.inputA.data_size
+            byte = byte + self.output.rows * self.output.cols * self.output.data_size
+            byte  = byte * self.inputA.data_size
+            return self.flops / self.inputA.batch / byte
+        elif self.inputB is not None:
             byte = self.inputA.get_size() + self.inputB.get_size() + self.output.get_size()
         else:
             byte = self.inputA.get_size() + self.output.get_size()
