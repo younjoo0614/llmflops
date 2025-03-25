@@ -173,10 +173,10 @@ class Model:
                     
             elif layer.name == "post_attn_norm":
                 post_attn_norm_result_shared.reshape(post_attn_norm_result)
-                print(post_attn_norm_result)
+                # print(post_attn_norm_result)
                 
                 post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
-                print(post_attn_norm_result_shared)
+                # print(post_attn_norm_result_shared)
             
             df.loc[len(df)] = [
                 layer.name,
@@ -201,9 +201,19 @@ class Model:
         total_time = df["Execution_time"].sum()
         df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100
         df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
+        #kv
         total_kv_size = batch_size * (model_config['n_heads']*(input_len + output_len) * ((model_config['qk rope head dim'] + model_config['qk nope head dim']) + model_config['v head dim'])) * data_size * 61
         df.loc[len(df)] = ["KV Cache", "", "", "", total_kv_size/1024/1024/1024, "", "", ""]
-
+        
+        #weight
+        df["InputB"] = pd.to_numeric(df["InputB"], errors='coerce')
+        routed_mask = df["Layer Name"].str.contains("routed", case=False, na=False)
+        df.loc[routed_mask, "InputB"] = df.loc[routed_mask, "InputB"] * 256 / (tp_degree * dp_degree)
+        exclude_mask = df["Layer Name"].str.contains("score|context|flash", case=False, na=False)
+        filtered_df = df[~exclude_mask]  
+        total_weight_sum = filtered_df["InputB"].sum()
+        total_weight_sum = total_weight_sum * (57 if moe_flag else 3)
+        df.loc[len(df)] = ["Total Weight Sum", "", "", "", total_weight_sum/1024/1024/1024, "", "", ""]
         Matrix.reset_flops()
 
     def w_uk_first_layer(self, name, df, input_len, output_len, batch_size, data_size, tp_degree, dp_degree,
@@ -373,34 +383,24 @@ class Model:
                 layer.output.cols = model_config["qk rope head dim"]
             elif layer.name == "post_attn_norm":
                 post_attn_norm_result_shared.reshape(post_attn_norm_result)
-                print(post_attn_norm_result)
+                # print(post_attn_norm_result)
                 
                 post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
-                print(post_attn_norm_result_shared)
+                # print(post_attn_norm_result_shared)
                     
             elif layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
 
-            if decode_flag == False:
-                df.loc[len(df)] = [
-                    layer.name,
-                    layer.get_flops(),
-                    layer.inputA.get_size(),
-                    layer.inputB.get_size() if layer.inputB is not None else "",
-                    layer.output.get_size(),
-                    layer.get_op_per_byte(),
-                    layer.get_execution_time()
-                ]
-            else:
-                df.loc[len(df)] = [
-                    layer.name,
-                    layer.get_flops(),
-                    layer.inputA.get_size(),
-                    layer.inputB.get_size() if layer.inputB is not None else "",
-                    layer.output.get_size(),
-                    layer.get_op_per_byte(),
-                    layer.get_execution_time()
-                ]
+            df.loc[len(df)] = [
+                layer.name,
+                layer.get_flops(),
+                layer.inputA.get_size(),
+                layer.inputB.get_size() if layer.inputB is not None else "",
+                layer.output.get_size(),
+                layer.get_op_per_byte(),
+                layer.get_execution_time()
+            ]
+
 
             layer.get_communication_cost()
             if layer.parallelism_cost != None:
@@ -413,9 +413,20 @@ class Model:
         total_time = df["Execution_time"].sum()
         df["Execution_time(%)"] = (df["Execution_time"] / total_time) * 100
         df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
+
+        #KV
         total_kv_size = batch_size * ((input_len + output_len) * (model_config['qk rope head dim'] + model_config['kv lora rank'])) * data_size * 61
         df.loc[len(df)] = ["KV Cache", "", "", "",( total_kv_size/1024/1024/1024), "", "", ""]
 
+        #Weight
+        df["InputB"] = pd.to_numeric(df["InputB"], errors='coerce')
+        routed_mask = df["Layer Name"].str.contains("routed", case=False, na=False)
+        df.loc[routed_mask, "InputB"] = df.loc[routed_mask, "InputB"] * 256 / (tp_degree * dp_degree)
+        exclude_mask = df["Layer Name"].str.contains("score|context|flash", case=False, na=False)
+        filtered_df = df[~exclude_mask]  
+        total_weight_sum = filtered_df["InputB"].sum()
+        total_weight_sum = total_weight_sum * (57 if moe_flag else 3)
+        df.loc[len(df)] = ["Total Weight Sum", "", "", "", total_weight_sum/1024/1024/1024, "", "", ""]
         Matrix.reset_flops()
 
 

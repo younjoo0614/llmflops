@@ -135,10 +135,18 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
     if not kv_row.empty:
         kv_size_bytes = pd.to_numeric(kv_row["Output"].values[0], errors="coerce")
     total_time_ms = total_time / 1000  # μs → ms
+    
+    weight_row = df[df["Layer Name"] == "Total Weight Sum"]
+    if not weight_row.empty:
+        total_weight = pd.to_numeric(weight_row["Output"].values[0], errors="coerce")
+
+    total_time_ms = total_time / 1000  # μs → ms
+
+
     config_text = (
         f"Input: {input_len}, Output: {output_len}, Batch: {batch_size}\n"
         f"TP: {tensor_parallel}, DP: {data_parallel}, Total Time: {total_time_ms:.2f} ms\n"
-        f"KV Cache: {kv_size_bytes:.2f} GB"
+        f"KV Cache: {kv_size_bytes:.2f} GB \n Total Weight Sum: {total_weight:.2f} GB"
     )
 
     # 그래프에 추가
