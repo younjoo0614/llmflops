@@ -16,15 +16,14 @@ def load_device_config(device_config_file="./device_config.json"):
         device_config = json.load(file)
         global SH_MEM, INFINI_BW, INFINI_LATENCY
         SH_MEM = int(device_config["SH_MEM"])
-
+        INFINI_BW = int(device_config["INFINI_BW"])
+        INFINI_LATENCY = int(device_config["INFINI_LATENCY"])
 def set_parallelism_degree(tp_degree, dp_degree):
     global TP_DEGREE, DP_DEGREE
     TP_DEGREE = tp_degree
     DP_DEGREE = dp_degree
-
-        INFINI_BW = int(device_config["INFINI_BW"])
-        INFINI_LATENCY = int(device_config["INFINI_LATENCY"])
-            
+    
+        
 def create_layer_dataframe(layer_config):
     columns = [
         "Layer Name",
