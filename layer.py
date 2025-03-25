@@ -1,4 +1,5 @@
 import json
+from communication import get_allreduce_cost
 
 from matrix import Matrix
 from tp_type import TPType
@@ -105,3 +106,10 @@ class Layer:
                 return (self.inputA.get_size() + self.output.get_size()) / Layer.hbm_bw / 1e3
         else:
             return (self.flops) / Layer.throughput /1e6
+
+    def get_communication_cost(self):
+        if self.tp_degree <= 1 or self.parallelism_cost_flag is not True:
+            return
+        output_size = self.output.get_size()
+        self.parallelism_cost = get_allreduce_cost(self.tp_degree, output_size)
+        

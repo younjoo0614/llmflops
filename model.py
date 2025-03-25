@@ -91,8 +91,8 @@ class Model:
             Layer("query_up", compressed_q, weight_uq, decompressed_q, TPType.COL, tp_degree),
             Layer("kv_down", hidden_state, weight_dkv, compressed_kv, None, tp_degree, False),
             Layer("attn_norm_2", compressed_kv, None, compressed_kv, None, tp_degree, False), #확인
-            Layer("k_up", compressed_kv, weight_uk, decompressed_k, TPType.COL, tp_degree, True),
-            Layer("v_up", compressed_kv, weight_uv, decompressed_v, TPType.COL, tp_degree, True),
+            Layer("k_up", compressed_kv, weight_uk, decompressed_k, TPType.COL, tp_degree),
+            Layer("v_up", compressed_kv, weight_uv, decompressed_v, TPType.COL, tp_degree),
             Layer("k_rope_w", hidden_state, weight_rk, ropped_k, None, tp_degree),
             Layer("q_rope_w", compressed_q, weight_rq, ropped_q, TPType.COL, tp_degree),
             Layer("k_rope", ropped_k, None, ropped_k, None, tp_degree),
@@ -100,7 +100,7 @@ class Model:
             Layer("score", concated_q, concated_k, scored_result, TPType.HEAD_COL_COL, tp_degree),
             Layer("mask_scale_softmax", scored_result, None, mask_scale_softmax_result, TPType.NONE, tp_degree),
             Layer("context_head", mask_scale_softmax_result, decompressed_v, context_result, TPType.COL, tp_degree),
-            Layer("out_proj", context_result, weight_op, out_proj_result, TPType.ROW, tp_degree),
+            Layer("out_proj", context_result, weight_op, out_proj_result, TPType.ROW, tp_degree, parallelism_cost_flag=True),
             Layer("residual_addition", out_proj_result, None, residual_addition_result, None, tp_degree),
             Layer("post_attn_norm", residual_addition_result, None, post_attn_norm_result, None, tp_degree)
         ]
@@ -108,7 +108,7 @@ class Model:
             Layer("gate_proj", post_attn_norm_result, weight_gate, gate_proj_result, TPType.COL, tp_degree),
             Layer("up_proj", post_attn_norm_result, weight_up, up_proj_result, TPType.COL, tp_degree),
             Layer("silu", up_proj_result, None, silu_result, TPType.COL, tp_degree),
-            Layer("down_proj", silu_result, weight_down, down_proj_result, TPType.ROW, tp_degree),
+            Layer("down_proj", silu_result, weight_down, down_proj_result, TPType.ROW, tp_degree, parallelism_cost_flag=True),
             Layer("residual_addition2", down_proj_result, None, result_vector, None, tp_degree)
         ]
 
@@ -177,6 +177,12 @@ class Model:
                 layer.get_op_per_byte(),
                 layer.get_execution_time()
             ]
+
+            layer.get_communication_cost()
+            if layer.parallelism_cost: 
+                df.loc[len(df)] = [
+                    "Communication Cost", 0, "", "", "", "", layer.parallelism_cost
+                ]
 
             # if decode_flag == False:
             #     df.loc[len(df)] = [
@@ -305,7 +311,7 @@ class Model:
             Layer("mask_scale_softmax", score_ROPE_result, None,mask_scale_softmax_result, TPType.ROW_IN, tp_degree),
             Layer("context_matmul", mask_scale_softmax_result, compressed_kv, context_result, TPType.ROW_IN, tp_degree),
             Layer("v_up_proj_context", context_result, weight_uv, v_up_context_result, TPType.HEAD_ROW_COL, tp_degree),
-            Layer("out_proj", v_up_context_result, weight_op, out_proj_context_result, TPType.ROW, tp_degree),
+            Layer("out_proj", v_up_context_result, weight_op, out_proj_context_result, TPType.ROW, tp_degree,parallelism_cost_flag=True),
             Layer("residual_addition", out_proj_context_result, None, residual_addition_result, None, tp_degree),
             Layer("post_attn_norm", residual_addition_result, None, post_attn_norm_result, tp_degree)
         ]
@@ -314,7 +320,7 @@ class Model:
             Layer("gate_proj", post_attn_norm_result, weight_gate, gate_proj_result, TPType.COL, tp_degree),
             Layer("up_proj", post_attn_norm_result, weight_up, up_proj_result, TPType.COL, tp_degree),
             Layer("silu", up_proj_result, None, silu_result, TPType.COL, tp_degree),
-            Layer("down_proj", silu_result, weight_down, down_proj_result, TPType.ROW, tp_degree),
+            Layer("down_proj", silu_result, weight_down, down_proj_result, TPType.ROW, tp_degree,parallelism_cost_flag=True),
             Layer("residual_addition2", down_proj_result, None, result_vector)
         ]
 
@@ -404,6 +410,11 @@ class Model:
                     layer.get_execution_time()
                 ]
 
+            layer.get_communication_cost()
+            if layer.parallelism_cost: 
+                df.loc[len(df)] = [
+                    "Communication Cost", 0, "", "", "", "", layer.parallelism_cost
+                ]
         total_flops = df["FLOPS"].sum()
         df.loc[len(df)] = ["Total FLOPS", total_flops, "",  "", "", "", ""]
         df["Execution_time"] = pd.to_numeric(df["Execution_time"], errors="coerce")
