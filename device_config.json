@@ -3,8 +3,6 @@
     "HBM_BW" : 3352,
     "LPDDR_BW" : 500,
     "SH_MEM": 262144,
-    "TP_DEGREE" : 2,
-    "DP_DEGREE" : 2,
     "INFINI_BW": 450,
     "INFINI_LATENCY": 0.13       
 }
