@@ -254,6 +254,7 @@ class Model:
         out_proj_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
         residual_addition_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
         post_attn_norm_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        post_attn_norm_result_shared = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
         gate_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
         up_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
         silu_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
@@ -312,8 +313,8 @@ class Model:
         ]
 
         w_uk_first_moe_ffn_layers = [
-            Layer("gate_shared", post_attn_norm_result, weight_gate_shared, gate_shared_result),
-            Layer("up_shared", post_attn_norm_result, weight_up_shared, up_shared_result),
+            Layer("gate_shared", post_attn_norm_result_shared, weight_gate_shared, gate_shared_result),
+            Layer("up_shared", post_attn_norm_result_shared, weight_up_shared, up_shared_result),
             Layer("silu_shared", up_shared_result, None, silu_shared_result),
             Layer("down_shared", silu_shared_result, weight_down_shared, down_shared_result),
             Layer("router", post_attn_norm_result, weight_router, routed_result),
@@ -370,10 +371,14 @@ class Model:
             elif layer.name == "q_rope_w" and decode_flag:
                 layer.output.rows = layer.output.cols / model_config["qk rope head dim"]
                 layer.output.cols = model_config["qk rope head dim"]
-
-
+            elif layer.name == "post_attn_norm":
+                post_attn_norm_result_shared.reshape(post_attn_norm_result)
+                print(post_attn_norm_result)
+                
+                post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
+                print(post_attn_norm_result_shared)
                     
-            if layer.name == "out_proj_context":
+            elif layer.name == "out_proj_context":
                 layer.output.batch = layer.output.batch / model_config["n_heads"]
 
             if decode_flag == False:
