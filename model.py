@@ -166,7 +166,7 @@ class Model:
                     duplicated_ropped_k = Matrix(input_len, model_config["qk rope head dim"] * model_config["n_heads"])
                     concated_q = decompressed_q.concat(ropped_q, False)
                     concated_k = decompressed_k.concat(duplicated_ropped_k, False)
-                    print("concatted", concated_q)
+                    #print("concatted", concated_q)
 
                 else:
                     # duplicated_ropped_k = Matrix((output_len+1)/2, model_config["qk rope head dim"]*model_config["n_heads"])

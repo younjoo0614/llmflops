@@ -34,15 +34,12 @@ class Matrix:
         return result, flops
     
     def flash_attention(self, B, real): # K cache and V cache has the same shape
-        print(self)
         self.cols = self.cols / (config.NUM_HEADS / config.TP_DEGREE)
         self.batch = self.batch * (config.NUM_HEADS / config.TP_DEGREE)
 
         B.cols = B.cols / (config.NUM_HEADS / config.TP_DEGREE)
         self.batch = B.batch * (config.NUM_HEADS / config.TP_DEGREE)
 
-        print(self)
-        print(B)
         
         result = Matrix(self.rows, B.cols, self.batch)
 

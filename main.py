@@ -1,7 +1,7 @@
 import argparse
 import pandas as pd
 import config
-from config import load_model_config, load_device_config
+from config import load_model_config, load_device_config, set_parallelism_degree
 from matrix import Matrix
 from layer import Layer
 from model import Model
@@ -34,9 +34,8 @@ def main():
     model_config = load_model_config(args.model_num)
     device_config = load_device_config()
     
-    global TP_DEGREE, DP_DEGREE
-    TP_DEGREE = int(args.tensor_degree)
-    DP_DEGREE = int(args.data_degree)
+    set_parallelism_degree(int(args.tensor_degree), int(args.data_degree))
+
     
     
 
@@ -61,7 +60,7 @@ def main():
                 csv_data = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output", "OP/B", "Execution_time"])
                 if impl == "base":
                     deepseek.base_layer("deepseek", csv_data, args.input_len,args.output_len, batch_size_per_device,
-                        args.tensor_degree, args.data_degree, model_config, decode_flag, moe_flag)
+                        args.tensor_degree, args.data_degree, model_config, decode_flag, moe_flag, args.flash_attention)
                 elif impl == "absorb":
                     deepseek.w_uk_first_layer("deepseek", csv_data, args.input_len,args.output_len, batch_size_per_device, args.tensor_degree, args.data_degree, model_config, decode_flag, moe_flag)
                 

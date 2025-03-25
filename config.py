@@ -14,11 +14,13 @@ def load_model_config(model_num, model_config_file="./model_config.json"):
 def load_device_config(device_config_file="./device_config.json"):
     with open(device_config_file, mode="r", encoding="utf-8") as file:
         device_config = json.load(file)
-        global TP_DEGREE, DP_DEGREE, SH_MEM
-        TP_DEGREE = int(device_config["TP_DEGREE"])
-        DP_DEGREE = int(device_config["DP_DEGREE"])
+        global SH_MEM
         SH_MEM = int(device_config["SH_MEM"])
 
+def set_parallelism_degree(tp_degree, dp_degree):
+    global TP_DEGREE, DP_DEGREE
+    TP_DEGREE = tp_degree
+    DP_DEGREE = dp_degree
 
 def create_layer_dataframe(layer_config):
     columns = [
