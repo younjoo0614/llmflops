@@ -141,5 +141,5 @@ def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None
 
 
     plt.subplots_adjust(top=0.82, bottom=0.12)
-    plt.savefig("./result" + name + ".png")
+    plt.savefig(name + ".png")
     plt.show()
