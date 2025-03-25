@@ -61,29 +61,58 @@ def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None
     # 그래프 크기를 키움
     fig, ax = plt.subplots(figsize=(20, 8))
 
-    # 각 레이어마다 직사각형(막대) 그리기 및 텍스트 추가
+
+
+    if "base_decode" in name:
+        ax.set_xlim(0, 100)
+
+        # 더 작은 값도 잘 보이게 Y축 하한을 -1 (log10(0.1))로 설정
+        min_tick = -1
+        max_tick = int(np.ceil(df["Transformed_OPB"].dropna().max()))
+        
+        yticks = list(range(min_tick, max_tick + 1))
+        ax.set_yticks(yticks)
+        ax.set_yticklabels([f"{10**t:.1f}" if t < 3 else f"{10**t:.0f}" for t in yticks])
+        ax.set_ylim(min_tick, max_tick)
+    else:
+        ax.set_xlim(0, 100)
+        max_tick = int(np.ceil(df["Transformed_OPB"].dropna().max()))
+        yticks = list(range(0, max_tick + 1))
+        ax.set_yticks(yticks)
+        ytick_labels = [f"{10**t:.0f}" for t in yticks]
+        ax.set_yticklabels(ytick_labels)
+        ax.set_ylim(0, max_tick)
+
+    ymin = ax.get_ylim()[0]
+
     for i, row in df.iterrows():
         transformed_value = row["Transformed_OPB"]
         perc = row["Percentage"]
+        exec_time_us = row["Execution_time"]
         color = get_color(row["Layer Name"])
-        if pd.notna(transformed_value):
-            rect = patches.Rectangle((lefts[i], 0), perc, transformed_value,
-                                     edgecolor='black', facecolor=color)
+
+        if pd.notna(transformed_value) and pd.notna(exec_time_us):
+            height = transformed_value - ymin
+            rect = patches.Rectangle((lefts[i], ymin), perc, height,
+                                    edgecolor='black', facecolor=color)
             ax.add_patch(rect)
 
-            # 막대 폭이 너무 작으면 텍스트 생략
-            if perc >= 2:
-                ax.text(lefts[i] + perc / 2, transformed_value / 2,
-                        f"{row['Layer Name']} ({row['Percentage']:.1f}%)",
-                        ha='center', va='center', fontsize=10, rotation=90, color='black')
+            exec_time_ms = exec_time_us / 1000
+            label_text = f"{row['Layer Name']}\n({perc:.1f}%, {exec_time_ms:.2f}ms)"
 
-    ax.set_xlim(0, 100)
-    max_tick = int(np.ceil(df["Transformed_OPB"].dropna().max()))
-    yticks = list(range(0, max_tick + 1))
-    ax.set_yticks(yticks)
-    ytick_labels = [f"{10**t:.0f}" for t in yticks]
-    ax.set_yticklabels(ytick_labels)
-    ax.set_ylim(0, max_tick)
+            if perc >= 2:
+                # 넓은 막대일 경우 가로 출력
+                if perc >= 6:
+                    ax.text(lefts[i] + perc / 2, ymin + height * 0.95,
+                            label_text,
+                            ha='center', va='top', fontsize=12, rotation=0, color='black')
+                else:
+                    # 좁은 막대일 경우 세로 출력
+                    ax.text(lefts[i] + perc / 2, ymin + height / 2,
+                            label_text,
+                            ha='center', va='center', fontsize=12, rotation=90, color='black')
+
+
     # Balance point 라인
     balance_point_log = np.log10(295)
     ax.axhline(y=balance_point_log, color='red', linestyle='--', linewidth=1.5)
