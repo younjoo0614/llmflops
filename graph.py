@@ -84,7 +84,11 @@ def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None
     ytick_labels = [f"{10**t:.0f}" for t in yticks]
     ax.set_yticklabels(ytick_labels)
     ax.set_ylim(0, max_tick)
-
+    # Balance point 라인
+    balance_point_log = np.log10(295)
+    ax.axhline(y=balance_point_log, color='red', linestyle='--', linewidth=1.5)
+    ax.text(100, balance_point_log, 'Balance point', va='center', ha='right',
+            fontsize=11, color='red', fontweight='bold')
     ax.set_xlabel("Execution Time Share (%)", fontsize=12)
     ax.set_ylabel("OP/B", fontsize=12)
     ax.set_title(f"Execution Time vs OP/B: {name}", fontsize=14)
@@ -107,6 +111,6 @@ def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None
             bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5'))
 
 
-    plt.tight_layout()
+    plt.subplots_adjust(top=0.82, bottom=0.12)
     plt.savefig("./result" + name + ".png")
     plt.show()
