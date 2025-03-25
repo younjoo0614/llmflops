@@ -35,15 +35,15 @@ def main():
     
     set_parallelism_degree(int(args.tensor_degree), int(args.data_degree))
 
-    print("===== Configuration =====")
-    print(f"Input Sequence Length: {args.input_len}")
-    print(f"Output Sequence Length: {args.output_len}")
-    print(f"Batch Size: {args.batch_size}")
-    print(f"Batch Size per Device: {args.batch_size / args.data_degree}")
-    print(f"Data Size: {args.data_size}")
-    print(f"Model Num: {args.model_num}")
-    print(f"Model Name: {model_config['Model Name']}")
-    print(f"Flash Attention: {args.flash_attention}\n\n")
+    # print("===== Configuration =====")
+    # print(f"Input Sequence Length: {args.input_len}")
+    # print(f"Output Sequence Length: {args.output_len}")
+    # print(f"Batch Size: {args.batch_size}")
+    # print(f"Batch Size per Device: {args.batch_size / args.data_degree}")
+    # print(f"Data Size: {args.data_size}")
+    # print(f"Model Num: {args.model_num}")
+    # print(f"Model Name: {model_config['Model Name']}")
+    # print(f"Flash Attention: {args.flash_attention}\n\n")
 
     deepseek = Model("deepseek")
 
