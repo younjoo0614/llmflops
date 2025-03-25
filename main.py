@@ -5,7 +5,6 @@ from config import load_model_config, load_device_config, set_parallelism_degree
 from matrix import Matrix
 from layer import Layer
 from model import Model
-from graph import create_time_graph
 
 def print_layer_config(layer_config, indent=0):
     for key, value in layer_config.items():
@@ -64,11 +63,7 @@ def main():
                 csv_name = "./result/deepseek_{}_{}_{}_Lin{}_Lout{}_Batch{}_TP{}_DP{}".format("decode" if decode_flag else "prefill", impl, "moe" if moe_flag else "dense", args.input_len, args.output_len, args.batch_size, config.TP_DEGREE, config.DP_DEGREE)
                 csv_data.to_csv(csv_name+".csv", index=False, encoding="utf-8")
                 
-                create_time_graph(csv_data, csv_name,
-                                  input_len=args.input_len, output_len=args.output_len,
-                                  batch_size=args.batch_size,
-                                  tensor_parallel=config.TP_DEGREE,
-                                  data_parallel=config.DP_DEGREE)
+
 
 if __name__ == "__main__":
     main()
