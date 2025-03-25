@@ -92,7 +92,7 @@ class Layer:
             byte = 2 * self.inputB.rows * self.inputB.cols * self.inputB.data_size
             byte = byte + 3 * self.inputA.rows * self.inputA.rows + (16 * self.inputA.rows * self.inputA.rows * self.inputA.cols / Layer.shmem_size) * self.inputA.data_size
             byte = byte + self.output.rows * self.output.cols * self.output.data_size
-            byte  = byte * self.inputA.data_size
+            byte  = byte * self.inputA.data_size 
             return self.flops / self.inputA.batch / byte
         elif self.inputB is not None:
             byte = self.inputA.get_size() + self.inputB.get_size() + self.output.get_size()
@@ -108,6 +108,12 @@ class Layer:
         hbm_balance_point = Layer.throughput * 1024 / Layer.hbm_bw
 
         if op_per_byte < hbm_balance_point:
+            if self.name == "flash_attention":
+                byte = 2 * self.inputB.rows * self.inputB.cols * self.inputB.data_size
+                byte = byte + 3 * self.inputA.rows * self.inputA.rows + (16 * self.inputA.rows * self.inputA.rows * self.inputA.cols / Layer.shmem_size) * self.inputA.data_size
+                byte = byte + self.output.rows * self.output.cols * self.output.data_size
+                byte  = byte * self.inputA.data_size * self.inputA.batch
+                return byte / Layer.hbm_bw / 1e3
             if self.inputB is not None:
                 return (self.inputA.get_size() + self.inputB.get_size() + self.output.get_size()) / Layer.hbm_bw / 1e3
             else:

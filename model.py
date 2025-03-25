@@ -10,7 +10,7 @@ class Model:
     def __init__(self, name):
         self.name = name
 
-    def base_layer(self, name, df, input_len, output_len, batch_size, tp_degree, dp_degree,
+    def base_layer(self, name, df, input_len, output_len, batch_size, data_size, tp_degree, dp_degree,
                    model_config, decode_flag, moe_flag, fa_flag):
 
         #input matrix
@@ -21,24 +21,25 @@ class Model:
             # input_matrix = Matrix((output_len+1)/2, model_config["d_emb"], batch_size)
 
         #weight matrix
-        weight_dq = Matrix(model_config["d_emb"], model_config["q lora rank"])
-        weight_dkv = Matrix(model_config["d_emb"], model_config["kv lora rank"])
-        weight_uq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_uk = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_uv = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_rq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk rope head dim"])
-        weight_rk = Matrix(model_config["d_emb"], model_config["qk rope head dim"])
-        weight_op = Matrix(model_config["n_heads"] * model_config["qk nope head dim"], model_config["d_emb"])
-        weight_gate = Matrix(model_config["d_emb"], model_config["intermediate dim"])
-        weight_up = Matrix(model_config["d_emb"], model_config["intermediate dim"])
-        weight_down = Matrix(model_config["intermediate dim"], model_config["d_emb"])
-        weight_router = Matrix(model_config['d_emb'], model_config['n_experts'])
-        weight_gate_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_up_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_down_routed = Matrix(model_config['moe intermediate dim'], model_config['d_emb'])
-        weight_gate_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_up_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_down_shared = Matrix(model_config['moe intermediate dim'],model_config['d_emb'])
+        weight_dq = Matrix(model_config["d_emb"], model_config["q lora rank"], data_size=data_size)
+        weight_dkv = Matrix(model_config["d_emb"], model_config["kv lora rank"], data_size=data_size)
+        weight_uq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk nope head dim"], data_size=data_size)
+        weight_uk = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"], data_size=data_size)
+        weight_uv = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"], data_size=data_size)
+        weight_rq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk rope head dim"], data_size=data_size)
+        weight_rk = Matrix(model_config["d_emb"], model_config["qk rope head dim"], data_size=data_size)
+        weight_op = Matrix(model_config["n_heads"] * model_config["qk nope head dim"], model_config["d_emb"], data_size=data_size)
+        weight_gate = Matrix(model_config["d_emb"], model_config["intermediate dim"], data_size=data_size)
+        weight_up = Matrix(model_config["d_emb"], model_config["intermediate dim"], data_size=data_size)
+        weight_down = Matrix(model_config["intermediate dim"], model_config["d_emb"], data_size=data_size)
+        weight_router = Matrix(model_config['d_emb'], model_config['n_experts'], data_size=data_size)
+        weight_gate_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_up_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_down_routed = Matrix(model_config['moe intermediate dim'], model_config['d_emb'], data_size=data_size)
+        weight_gate_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_up_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_down_shared = Matrix(model_config['moe intermediate dim'], model_config['d_emb'], data_size=data_size)
+
 
         #Activation matrix
         if decode_flag:
@@ -46,43 +47,46 @@ class Model:
         else:
             seq_len = input_len
         
-        hidden_state = Matrix(seq_len, model_config["d_emb"], batch_size)
-        compressed_q = Matrix(seq_len, model_config["q lora rank"], batch_size)
-        decompressed_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
-        compressed_kv = Matrix(seq_len, model_config["kv lora rank"], batch_size)
-        decompressed_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
-        decompressed_v = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
-        ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size)
-        ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size)
-        duplicated_ropped_k = Matrix(seq_len, model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
-        concated_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
+        hidden_state = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
+        compressed_q = Matrix(seq_len, model_config["q lora rank"], batch_size, data_size=data_size)
+        decompressed_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        compressed_kv = Matrix(seq_len, model_config["kv lora rank"], batch_size, data_size=data_size)
+        decompressed_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        decompressed_v = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size, data_size=data_size)
+        ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size, data_size=data_size)
+        duplicated_ropped_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size, data_size=data_size)
+        concated_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"] * model_config["qk rope head dim"], batch_size, data_size=data_size)
+
         if decode_flag:
-            concated_k = Matrix((output_len + 1) / 2 + input_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
-            scored_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size)
-            mask_scale_softmax_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size)
-            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size)
+            concated_k = Matrix((output_len + 1) / 2 + input_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"] * model_config["qk rope head dim"], batch_size, data_size=data_size)
+            scored_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size, data_size=data_size)
+            mask_scale_softmax_result = Matrix(seq_len, (output_len + 1) / 2 + input_len, batch_size, data_size=data_size)
+            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size, data_size=data_size)
         else:
-            concated_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"]*model_config["qk rope head dim"], batch_size)
-            scored_result = Matrix(seq_len, seq_len, batch_size)
-            mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size)
-            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size)
-        out_proj_result = Matrix(seq_len, model_config["d_emb"], batch_size)
-        residual_addition_result = Matrix(seq_len, model_config["d_emb"], batch_size)
-        post_attn_norm_result = Matrix(seq_len, model_config["d_emb"], batch_size)
-        gate_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
-        up_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
-        silu_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
-        down_proj_result = Matrix(seq_len, model_config['d_emb'], batch_size)
-        result_vector = Matrix(seq_len, model_config['d_emb'], batch_size)
-        routed_result = Matrix(seq_len, model_config['n_experts'], batch_size)
-        gate_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
-        up_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
-        silu_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
-        down_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['d_emb'], batch_size)
-        gate_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
-        up_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
-        silu_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
-        down_shared_result = Matrix(seq_len, model_config['d_emb'], batch_size)
+            concated_k = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"] + model_config["n_heads"] * model_config["qk rope head dim"], batch_size, data_size=data_size)
+            scored_result = Matrix(seq_len, seq_len, batch_size, data_size=data_size)
+            mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size, data_size=data_size)
+            context_result = Matrix(seq_len, model_config["qk nope head dim"], batch_size, data_size=data_size)
+
+        out_proj_result = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
+        residual_addition_result = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
+        post_attn_norm_result = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
+        gate_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
+        up_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
+        silu_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
+        down_proj_result = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
+        result_vector = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
+        routed_result = Matrix(seq_len, model_config['n_experts'], batch_size, data_size=data_size)
+        gate_routed_result = Matrix(seq_len * model_config['top-k'] / model_config['n_experts'], model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        up_routed_result = Matrix(seq_len * model_config['top-k'] / model_config['n_experts'], model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        silu_routed_result = Matrix(seq_len * model_config['top-k'] / model_config['n_experts'], model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        down_routed_result = Matrix(seq_len * model_config['top-k'] / model_config['n_experts'], model_config['d_emb'], batch_size, data_size=data_size)
+        gate_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        up_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        silu_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        down_shared_result = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
+
 
         base_layers = [
             Layer("pre_attn_norm", input_matrix, None, hidden_state),
@@ -131,7 +135,7 @@ class Model:
             base_layers = base_layers + base_moe_ffn_layers
 
         for layer in base_layers:
-            if fa_flag:
+            if fa_flag and not decode_flag:
                 if layer.name in  ["score", "mask_scale_softmax", "context_head"]:
                     continue
             else:
@@ -216,7 +220,7 @@ class Model:
         df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
         Matrix.reset_flops()
 
-    def w_uk_first_layer(self, name, df, input_len, output_len, batch_size, tp_degree, dp_degree,
+    def w_uk_first_layer(self, name, df, input_len, output_len, batch_size, data_size, tp_degree, dp_degree,
                          model_config, decode_flag, moe_flag):
 
         #input matrix
@@ -226,73 +230,70 @@ class Model:
             input_matrix = Matrix(1, model_config["d_emb"], batch_size)
 
         #weight matrix
-        weight_dq = Matrix(model_config["d_emb"], model_config["q lora rank"])
-        weight_dkv = Matrix(model_config["d_emb"], model_config["kv lora rank"])
-        weight_uq = Matrix(
-            model_config["q lora rank"],
-            model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_uk = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_uv = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"])
-        weight_rq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk rope head dim"])
-        weight_rk = Matrix(model_config["d_emb"], model_config["qk rope head dim"])
-        weight_op = Matrix(model_config["n_heads"] * model_config["qk nope head dim"], model_config["d_emb"])
-        weight_gate = Matrix(model_config["d_emb"], model_config["intermediate dim"])
-        weight_up = Matrix(model_config["d_emb"], model_config["intermediate dim"])
-        weight_down = Matrix(model_config["intermediate dim"], model_config["d_emb"])
-        weight_router = Matrix(model_config['d_emb'], model_config['n_experts'])
-        weight_gate_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_up_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_down_routed = Matrix(model_config['moe intermediate dim'], model_config['d_emb'])
-        weight_gate_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_up_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'])
-        weight_down_shared = Matrix(model_config['moe intermediate dim'], model_config['d_emb'])
-
+        weight_dq = Matrix(model_config["d_emb"], model_config["q lora rank"], data_size=data_size)
+        weight_dkv = Matrix(model_config["d_emb"], model_config["kv lora rank"], data_size=data_size)
+        weight_uq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk nope head dim"], data_size=data_size)
+        weight_uk = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"], data_size=data_size)
+        weight_uv = Matrix(model_config["kv lora rank"], model_config["n_heads"] * model_config["qk nope head dim"], data_size=data_size)
+        weight_rq = Matrix(model_config["q lora rank"], model_config["n_heads"] * model_config["qk rope head dim"], data_size=data_size)
+        weight_rk = Matrix(model_config["d_emb"], model_config["qk rope head dim"], data_size=data_size)
+        weight_op = Matrix(model_config["n_heads"] * model_config["qk nope head dim"], model_config["d_emb"], data_size=data_size)
+        weight_gate = Matrix(model_config["d_emb"], model_config["intermediate dim"], data_size=data_size)
+        weight_up = Matrix(model_config["d_emb"], model_config["intermediate dim"], data_size=data_size)
+        weight_down = Matrix(model_config["intermediate dim"], model_config["d_emb"], data_size=data_size)
+        weight_router = Matrix(model_config['d_emb'], model_config['n_experts'], data_size=data_size)
+        weight_gate_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_up_routed = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_down_routed = Matrix(model_config['moe intermediate dim'], model_config['d_emb'], data_size=data_size)
+        weight_gate_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_up_shared = Matrix(model_config['d_emb'], model_config['moe intermediate dim'], data_size=data_size)
+        weight_down_shared = Matrix(model_config['moe intermediate dim'], model_config['d_emb'], data_size=data_size)
         #Activation matrix
         if decode_flag:
             seq_len = 1
         else:
             seq_len = input_len
         
-        hidden_state = Matrix(seq_len, model_config["d_emb"], batch_size)
-        compressed_q = Matrix(seq_len, model_config["q lora rank"], batch_size)
-        decompressed_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
-        compressed_kv = Matrix(seq_len, model_config["kv lora rank"], batch_size)
-        ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size)
-        if decode_flag == False: ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size)
-        else: ropped_q = Matrix(model_config['n_heads'], model_config['qk rope head dim'] ,batch_size)
-        mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size)
+        hidden_state = Matrix(seq_len, model_config["d_emb"], batch_size, data_size=data_size)
+        compressed_q = Matrix(seq_len, model_config["q lora rank"], batch_size, data_size=data_size)
+        decompressed_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        compressed_kv = Matrix(seq_len, model_config["kv lora rank"], batch_size, data_size=data_size)
+        ropped_k = Matrix(seq_len, model_config["qk rope head dim"], batch_size, data_size=data_size)
+        if decode_flag == False: ropped_q = Matrix(seq_len, model_config["n_heads"] * model_config["qk rope head dim"], batch_size, data_size=data_size)
+        else: ropped_q = Matrix(model_config['n_heads'], model_config['qk rope head dim'] ,batch_size, data_size=data_size)
+        mask_scale_softmax_result = Matrix(seq_len, seq_len, batch_size, data_size=data_size)
 
-        context_result = Matrix(seq_len*model_config['n_heads'], model_config["kv lora rank"], batch_size)
+        context_result = Matrix(seq_len*model_config['n_heads'], model_config["kv lora rank"], batch_size, data_size=data_size)
 
-        out_proj_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
-        residual_addition_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
-        post_attn_norm_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size)
-        gate_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
-        up_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
-        silu_result = Matrix(seq_len, model_config["intermediate dim"], batch_size)
-        down_proj_result = Matrix(seq_len, model_config['d_emb'], batch_size)
-        result_vector = Matrix(seq_len, model_config['d_emb'], batch_size)
-        routed_result = Matrix(seq_len, model_config['n_experts'], batch_size)
-        gate_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
-        up_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
-        silu_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size)
-        down_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['d_emb'], batch_size)
-        gate_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
-        up_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
-        silu_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size)
-        down_shared_result = Matrix(seq_len, model_config['d_emb'], batch_size)
-        transposed_k_up_result = Matrix(seq_len, model_config["kv lora rank"], batch_size*model_config['n_heads'])
+        out_proj_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        residual_addition_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        post_attn_norm_result = Matrix(seq_len, model_config["n_heads"] * model_config["qk nope head dim"], batch_size, data_size=data_size)
+        gate_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
+        up_proj_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
+        silu_result = Matrix(seq_len, model_config["intermediate dim"], batch_size, data_size=data_size)
+        down_proj_result = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
+        result_vector = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
+        routed_result = Matrix(seq_len, model_config['n_experts'], batch_size, data_size=data_size)
+        gate_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        up_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        silu_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        down_routed_result = Matrix(seq_len*model_config['top-k']/model_config['n_experts'], model_config['d_emb'], batch_size, data_size=data_size)
+        gate_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        up_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        silu_shared_result = Matrix(seq_len, model_config['moe intermediate dim'], batch_size, data_size=data_size)
+        down_shared_result = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
+        transposed_k_up_result = Matrix(seq_len, model_config["kv lora rank"], batch_size*model_config['n_heads'], data_size=data_size)
         if decode_flag:
-            score_NOPE_result = Matrix(seq_len*model_config['n_heads'], (output_len + 1) / 2 + input_len ,batch_size)
-            score_ROPE_result = Matrix(seq_len*model_config['n_heads'], (output_len + 1) / 2, batch_size)
-            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size)
-            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size)
+            score_NOPE_result = Matrix(seq_len*model_config['n_heads'], (output_len + 1) / 2 + input_len ,batch_size, data_size=data_size)
+            score_ROPE_result = Matrix(seq_len*model_config['n_heads'], (output_len + 1) / 2, batch_size, data_size=data_size)
+            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size, data_size=data_size)
+            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
 
         else:
-            score_NOPE_result = Matrix(seq_len*model_config['n_heads'], seq_len ,batch_size)
-            score_ROPE_result = Matrix(seq_len*model_config['n_heads'], seq_len, batch_size)
-            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size )
-            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size )
+            score_NOPE_result = Matrix(seq_len*model_config['n_heads'], seq_len ,batch_size, data_size=data_size)
+            score_ROPE_result = Matrix(seq_len*model_config['n_heads'], seq_len, batch_size, data_size=data_size)
+            v_up_context_result = Matrix(seq_len,model_config["qk nope head dim"], batch_size, data_size=data_size)
+            out_proj_context_result = Matrix(seq_len, model_config['d_emb'], batch_size, data_size=data_size)
 
         w_uk_first_layers = [
             Layer("pre_attn_norm", input_matrix, None, hidden_state, None, tp_degree),

@@ -45,7 +45,7 @@ def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None
         attn_keywords = [
             'pre_attn_norm', 'query_down', 'query_up', 'kv_down', 'k_up', 'v_up',
             'k_rope', 'q_rope', 'rope', 'score', 'mask', 'context',
-            'out_proj', 'residual_addition', 'post_attn_norm',
+            'out_proj', 'residual_addition', 'post_attn_norm', "flash_attention",
             'transposed', 'score layer', 'context_matmul', 'v_up_proj_context', "score layer for RoPE","score layer for NoPE", "mask_scale_softmax" 
         ]
         if any(k in lname for k in attn_keywords):

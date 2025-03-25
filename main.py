@@ -36,9 +36,6 @@ def main():
     
     set_parallelism_degree(int(args.tensor_degree), int(args.data_degree))
 
-    
-    
-
     print("===== Configuration =====")
     print(f"Input Sequence Length: {args.input_len}")
     print(f"Output Sequence Length: {args.output_len}")
@@ -51,7 +48,7 @@ def main():
 
     deepseek = Model("deepseek")
 
-    batch_size_per_device = int(args.batch_size / args.data_degree)
+    batch_size_per_dp_node = int(args.batch_size / args.data_degree)
     
     for impl in ["base", "absorb"]:
         for decode_flag in [True, False]:
@@ -59,10 +56,10 @@ def main():
                 
                 csv_data = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output", "OP/B", "Execution_time"])
                 if impl == "base":
-                    deepseek.base_layer("deepseek", csv_data, args.input_len,args.output_len, batch_size_per_device,
+                    deepseek.base_layer("deepseek", csv_data, args.input_len,args.output_len, batch_size_per_dp_node, args.data_size,
                         args.tensor_degree, args.data_degree, model_config, decode_flag, moe_flag, args.flash_attention)
                 elif impl == "absorb":
-                    deepseek.w_uk_first_layer("deepseek", csv_data, args.input_len,args.output_len, batch_size_per_device, args.tensor_degree, args.data_degree, model_config, decode_flag, moe_flag)
+                    deepseek.w_uk_first_layer("deepseek", csv_data, args.input_len,args.output_len, batch_size_per_dp_node, args.data_size, args.tensor_degree, args.data_degree, model_config, decode_flag, moe_flag)
                 
                 csv_name = "./result/deepseek_{}_{}_{}_Lin{}_Lout{}_Batch{}_TP{}_DP{}".format("decode" if decode_flag else "prefill", impl, "moe" if moe_flag else "dense", args.input_len, args.output_len, args.batch_size, config.TP_DEGREE, config.DP_DEGREE)
                 csv_data.to_csv(csv_name+".csv", index=False, encoding="utf-8")

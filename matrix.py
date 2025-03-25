@@ -43,7 +43,7 @@ class Matrix:
         
         result = Matrix(self.rows, B.cols, self.batch)
 
-        flops = (4 * self.rows * self.rows * 192 + 16 * self.rows * self.rows + 24 * self.rows * self.rows * 192 / config.SH_MEM) * self.batch  # + 24 row^2 * col / 256K
+        flops = (4 * self.rows * self.rows * self.cols + 16 * self.rows * self.rows + 24 * self.rows * self.rows * self.cols / config.SH_MEM) * self.batch  # + 24 row^2 * col / 256K
 
         if real: Matrix.total_flops = int (Matrix.total_flops) + flops
         return result, flops 
