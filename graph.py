@@ -142,7 +142,7 @@ def create_time_graph(df, name, input_len=None, output_len=None, batch_size=None
 
     plt.subplots_adjust(top=0.82, bottom=0.12)
     plt.savefig(name + ".png")
-    plt.show()
+    #plt.show()
 
 
 
@@ -205,8 +205,8 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
 
 
 
-    #if "base_decode" in name:
-    if True:    
+    if "decode" in name:
+    #if True:    
         ax.set_xlim(0, 100)
 
         # 더 작은 값도 잘 보이게 Y축 하한을 -1 (log10(0.1))로 설정
