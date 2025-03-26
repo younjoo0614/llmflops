@@ -214,6 +214,7 @@ class Model:
         filtered_df = df[~exclude_mask]  
         total_weight_sum = filtered_df["InputB"].sum()
         total_weight_sum = total_weight_sum * (57 if moe_flag else 3)
+        total_weight_sum = total_weight_sum + (2 * model_config['d_emb'] * model_config['n_vocab'] * data_size)
         df.loc[len(df)] = ["Total Weight Sum", "", "", "", total_weight_sum/1024/1024/1024, "", "", ""]
         Matrix.reset_flops()
 
@@ -416,7 +417,7 @@ class Model:
         df["Execution_time(%)"] = df["Execution_time(%)"].round(2)
 
         #KV
-        total_kv_size = batch_size * ((input_len + output_len) * (model_config['qk rope head dim'] + model_config['kv lora rank'])) * data_size * 61
+        total_kv_size = batch_size * ((input_len + output_len) * (model_config['qk rope head dim'] + model_config['kv lora rank'])) * data_size * 60
         df.loc[len(df)] = ["KV Cache", "", "", "",( total_kv_size/1024/1024/1024), "", "", ""]
 
         #Weight
@@ -427,6 +428,7 @@ class Model:
         filtered_df = df[~exclude_mask]  
         total_weight_sum = filtered_df["InputB"].sum()
         total_weight_sum = total_weight_sum * (57 if moe_flag else 3)
+        total_weight_sum = (total_weight_sum + 2 * model_config['d_emb'] * model_config['n_vocab'] * data_size)
         df.loc[len(df)] = ["Total Weight Sum", "", "", "", total_weight_sum/1024/1024/1024, "", "", ""]
         Matrix.reset_flops()
 
