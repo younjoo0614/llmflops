@@ -45,12 +45,11 @@ class Layer:
             elif self.tp == TPType.HEAD_ROW_COL:
                 self.inputA.rows = self.inputA.rows / self.tp_degree
                 self.inputB.cols = self.inputB.cols / self.tp_degree
-            elif self.tp == TPType.HEAD_COL_ROW:
-                self.inputA.cols = self.inputA.cols / self.tp_degree
-                self.inputB.rows = self.inputB.rows / self.tp_degree
             elif self.tp == TPType.HEAD_COL_COL:
-                self.inputA.cols = self.inputA.cols / tp_degree
-                self.inputB.cols = self.inputB.cols / tp_degree
+                self.inputA.cols = self.inputA.cols / 128
+                self.inputA.batch = self.inputA.batch * 128 / self.tp_degree
+                self.inputB.cols = self.inputB.cols / 128
+                self.inputB.batch = self.inputB.batch * 128 / self.tp_degree
             else: # tp == None
                 pass
 
@@ -95,6 +94,9 @@ class Layer:
             byte = byte + self.output.rows * self.output.cols * self.output.data_size
             byte  = byte * self.inputA.data_size 
             return self.flops / self.inputA.batch / byte
+        elif self.name == "flash_mla":
+            byte = self.inputB.cols * 576 + self.inputA.batch + 128 * 576 + self.inputA.batch * 128 * 512
+            byte = byte * self.inputA.data_size
         elif self.inputB is not None:
             byte = self.inputA.get_size() + self.inputB.get_size() + self.output.get_size()
         else:
@@ -110,9 +112,11 @@ class Layer:
 
         if op_per_byte < hbm_balance_point:
             if self.name == "flash_attention":
-                byte = 2 * self.inputB.rows * self.inputB.cols * self.inputB.data_size
-                byte = byte + 3 * self.inputA.rows * self.inputA.rows + (16 * self.inputA.rows * self.inputA.rows * self.inputA.cols / Layer.shmem_size) * self.inputA.data_size
-                byte = byte + self.output.rows * self.output.cols * self.output.data_size
+                print("B: ", self.inputB)
+                print("A: ", self.inputA)
+                byte = 2 * self.inputB.rows * self.inputB.cols
+                byte = byte + 3 * self.inputA.rows * self.inputA.rows + (16 * self.inputA.rows * self.inputA.rows * self.inputA.cols / Layer.shmem_size)
+                byte = byte + self.output.rows * self.output.cols
                 byte  = byte * self.inputA.data_size * self.inputA.batch
                 return byte / Layer.hbm_bw / 1e3
             if self.inputB is not None:

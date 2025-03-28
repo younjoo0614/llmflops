@@ -34,29 +34,23 @@ class Matrix:
         return result, flops
     
     def flash_attention(self, B, real): # K cache and V cache has the same shape
-        self.cols = self.cols / (config.NUM_HEADS / config.TP_DEGREE)
-        self.batch = self.batch * (config.NUM_HEADS / config.TP_DEGREE)
-
-        B.cols = B.cols / (config.NUM_HEADS / config.TP_DEGREE)
-        self.batch = B.batch * (config.NUM_HEADS / config.TP_DEGREE)
-
-        
-        result = Matrix(self.rows, B.cols, self.batch)
-
+        result = Matrix(self.rows, B.cols - 64, self.batch)
         flops = (4 * self.rows * self.rows * self.cols + 16 * self.rows * self.rows + 24 * self.rows * self.rows * self.cols / config.SH_MEM) * self.batch  # + 24 row^2 * col / 256K
 
         if real: Matrix.total_flops = int (Matrix.total_flops) + flops
         return result, flops 
     
+    def flash_mla(self, B, real):
+        result = Matrix(1, self.cols, self.batch)
+        flops = self.batch * B.cols * config.NUM_HEADS * (self.cols + B.rows) * 2
 
+        if real:
+            Matrix.flops = Matrix.flops + flops
+
+        return result, flops
+        
     def score_head(self, B, real):
         B.transpose()
-        self.cols = self.cols / (config.NUM_HEADS / config.TP_DEGREE)
-        B.rows = B.rows / (config.NUM_HEADS / config.TP_DEGREE)
-
-        self.batch = self.batch * (config.NUM_HEADS / config.TP_DEGREE)
-        B.batch = B.batch * (config.NUM_HEADS / config.TP_DEGREE)
-
         if (self.cols != B.rows):
             raise ValueError(f"Dimension does not match self.cols: {self.cols}, B.rows: {B.rows}")
         result = Matrix(self.rows, B.cols, self.batch)
@@ -84,6 +78,7 @@ class Matrix:
         B.rows = B.rows / config.TP_DEGREE
         B.batch = B.batch * config.TP_DEGREE
         result = Matrix(self.rows, B.cols, self.batch)
+        print(result)
         flops = 2 * self.rows * self.cols * result.cols * result.batch + (config.TP_DEGREE - 1) * result.rows * result.cols
 
         if real:
@@ -99,7 +94,7 @@ class Matrix:
         return result, flops
 
     def residual_addition(self, real):
-        flops = self.rows * self.cols * self.batch * 1
+        flops = self.rows * self.cols * self.batch * 1 # need to add shared experts
         if real:
             Matrix.total_flops = int(Matrix.total_flops) + int(flops)
         return self, flops
