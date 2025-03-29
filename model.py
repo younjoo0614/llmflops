@@ -390,9 +390,13 @@ class Model:
             elif layer.name == "query_up":
                 layer.output.cols = layer.output.cols / model_config["n_heads"] * tp_degree
                 layer.output.batch = layer.output.batch * model_config["n_heads"] / tp_degree
-            elif layer.name == "q_rope_w" and decode_flag:
-                layer.output.rows = layer.output.cols / model_config["qk rope head dim"]
-                layer.output.cols = model_config["qk rope head dim"]
+            elif layer.name == "q_rope_w":
+                if decode_flag:
+                    layer.output.rows = layer.output.cols / model_config["qk rope head dim"]
+                    layer.output.cols = model_config["qk rope head dim"]
+                else:
+                    layer.output.rows = layer.output.rows * (model_config["n_heads"] / tp_degree)
+                    layer.output.cols = model_config["qk rope head dim"]
             elif layer.name == "transposed (k up proj)":
                 layer.output.rows = layer.output.rows * model_config["n_heads"] / tp_degree
                 layer.output.batch = layer.output.batch / (model_config["n_heads"] / tp_degree)
