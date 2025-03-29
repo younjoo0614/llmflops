@@ -131,14 +131,25 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
         patches.Patch(facecolor='orange', edgecolor='black', label='Communication Cost')
     ]
     ax.legend(handles=legend_elements, loc='upper right', fontsize=10)
+    kv_row = df[df["Layer Name"] == "KV Cache"]
+    if not kv_row.empty:
+        kv_size_bytes = pd.to_numeric(kv_row["Output"].values[0], errors="coerce")
+    total_time_ms = total_time / 1000  # μs → ms
+    
+    weight_row = df[df["Layer Name"] == "Total Weight Sum"]
+    if not weight_row.empty:
+        total_weight = pd.to_numeric(weight_row["Output"].values[0], errors="coerce")
 
     total_time_ms = total_time / 1000  # μs → ms
+
+
     config_text = (
         f"Input: {input_len}, Output: {output_len}, Batch: {batch_size}\n"
-        f"TP: {tensor_parallel}, DP: {data_parallel}, Total Time: {total_time_ms:.2f} ms"
+        f"TP: {tensor_parallel}, DP: {data_parallel}, Total Time: {total_time_ms:.2f} ms\n"
+        f"KV Cache: {kv_size_bytes:.2f} GB \n Total Weight Sum: {total_weight:.2f} GB"
     )
 
-    # 그래프 오른쪽 상단에 추가
+    # 그래프에 추가
     ax.text(50, max_tick + 0.3, config_text,
             ha='center', va='bottom', fontsize=11,
             bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5'))
