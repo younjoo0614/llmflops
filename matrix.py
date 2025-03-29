@@ -14,7 +14,6 @@ class Matrix:
         self.data_size = data_size
 
     def __str__(self):
-        # return f"rows: {self.rows}, cols: {self.cols}, batch: {self.batch}"
         return f"{int(self.rows)},{int(self.cols)},{int(self.batch)}"
 
     @classmethod
@@ -41,11 +40,11 @@ class Matrix:
         return result, flops 
     
     def flash_mla(self, B, real):
-        result = Matrix(1, self.cols, self.batch)
-        flops = self.batch * B.cols * config.NUM_HEADS * (self.cols + B.rows) * 2
+        result = Matrix(config.NUM_HEADS / config.TP_DEGREE, self.cols - 64, self.batch)
+        flops = self.batch * B.cols * config.NUM_HEADS * (self.cols + B.rows - 64) * 2
 
         if real:
-            Matrix.flops = Matrix.flops + flops
+            Matrix.flops = int(Matrix.total_flops) + flops
 
         return result, flops
         

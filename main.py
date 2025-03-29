@@ -50,7 +50,7 @@ def main():
     batch_size_per_dp_node = int(args.batch_size / args.data_degree)
     
     for impl in ["base", "absorb"]:
-        for decode_flag in [False]:
+        for decode_flag in [True]:
             for moe_flag in [True]:
                 
                 csv_data = pd.DataFrame(columns=["Layer Name", "FLOPS", "InputA", "InputB", "Output", "OP/B", "Execution_time"])

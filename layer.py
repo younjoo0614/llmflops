@@ -41,10 +41,11 @@ class Layer:
                 self.inputA.cols = self.inputA.cols / self.tp_degree
                 if self.inputB: self.inputB.rows = self.inputB.rows / self.tp_degree
             elif self.tp == TPType.ROW_IN:
-                self.inputA.rows = self.inputA.rows / self.tp_degree
+                self.inputA.rows = self.inputA.rows / 128
+                self.inputA.batch = self.inputA.batch * 128 / self.tp_degree
             elif self.tp == TPType.HEAD_ROW_COL:
-                self.inputA.rows = self.inputA.rows / self.tp_degree
-                self.inputB.cols = self.inputB.cols / self.tp_degree
+                self.inputB.cols = self.inputB.cols / 128
+                self.inputB.batch = self.inputB.batch * (128 / tp_degree)
             elif self.tp == TPType.HEAD_COL_COL:
                 self.inputA.cols = self.inputA.cols / 128
                 self.inputA.batch = self.inputA.batch * 128 / self.tp_degree
@@ -81,6 +82,9 @@ class Layer:
         
         elif "flash_attention" in self.name:
             result, self.flops = self.inputA.flash_attention(self.inputB, True)
+        
+        elif "flash_mla" in self.name:
+            result, self.flops = self.inputA.flash_mla(self.inputB, True)
 
         else:
             result, self.flops = self.inputA.matmul(self.inputB, True)
