@@ -99,7 +99,7 @@ class Layer:
             byte  = byte * self.inputA.data_size 
             return self.flops / self.inputA.batch / byte
         elif self.name == "flash_mla":
-            byte = self.inputB.cols * 576 + self.inputA.batch + 128 * 576 + self.inputA.batch * 128 * 512
+            byte = self.inputB.cols * 576 * self.inputA.batch + self.batch * 128 * 576 + self.inputA.batch * 128 * 512
             byte = byte * self.inputA.data_size
         elif self.inputB is not None:
             byte = self.inputA.get_size() + self.inputB.get_size() + self.output.get_size()
