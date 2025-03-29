@@ -142,7 +142,7 @@ class Model:
             else:
                 if layer.name == "flash_attention":
                     continue
-            if layer.name == "score" or layer.name == "context_head" and decode_flag == True:
+            if (layer.name == "score" or layer.name == "context_head") and decode_flag:
                 layer.inputB.rows = (output_len + 1) / 2 + input_len
 
             elif layer.name == "gate_routed":
@@ -159,6 +159,7 @@ class Model:
             # print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
+            #print(layer.output)
 
             if layer.name == "q_rope":
                 if decode_flag == False:
@@ -173,11 +174,9 @@ class Model:
                     
             elif layer.name == "post_attn_norm":
                 post_attn_norm_result_shared.reshape(post_attn_norm_result)
-                # print(post_attn_norm_result)
-                
+
                 post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
-                # print(post_attn_norm_result_shared)
-            
+ 
             df.loc[len(df)] = [
                 layer.name,
                 layer.get_flops(),
@@ -218,8 +217,9 @@ class Model:
         df.loc[len(df)] = ["Total Weight Sum", "", "", "", total_weight_sum/1024/1024/1024, "", "", ""]
         Matrix.reset_flops()
 
+
     def w_uk_first_layer(self, name, df, input_len, output_len, batch_size, data_size, tp_degree, dp_degree,
-                         model_config, decode_flag, moe_flag):
+                         model_config, decode_flag, moe_flag, fmla_flag):
 
         #input matrix
         if decode_flag == False:  #prefill
@@ -306,11 +306,11 @@ class Model:
             Layer("transposed (k up proj)", decompressed_q, weight_uk, transposed_k_up_result, TPType.HEAD_COL_COL, tp_degree),
             Layer("q_rope", ropped_q, None, ropped_q, TPType.COL, tp_degree),
             Layer("k_rope", ropped_k, None, ropped_k, None, tp_degree),
+            Layer("flash_mla", transposed_k_up_result, compressed_kv, context_result, TPType.ROW_IN, tp_degree) if fmla_flag and decode_flag else Layer("score layer for NoPE", transposed_k_up_result, compressed_kv,score_NOPE_result, TPType.ROW_IN, tp_degree),
             Layer("score layer for RoPE", ropped_q, ropped_k, score_ROPE_result, TPType.ROW_IN, tp_degree),
-            Layer("score layer for NoPE", transposed_k_up_result, compressed_kv,score_NOPE_result, TPType.ROW_IN, tp_degree),
             Layer("mask_scale_softmax", score_ROPE_result, None,mask_scale_softmax_result, TPType.ROW_IN, tp_degree),
             Layer("context_matmul", mask_scale_softmax_result, compressed_kv, context_result, TPType.ROW_IN, tp_degree),
-            Layer("v_up_proj_context", context_result, weight_uv, v_up_context_result, TPType.HEAD_ROW_COL, tp_degree),
+            Layer("v_up_proj", context_result, weight_uv, v_up_context_result, TPType.HEAD_ROW_COL, tp_degree),
             Layer("out_proj", v_up_context_result, weight_op, out_proj_context_result, TPType.ROW, tp_degree,parallelism_cost_flag=True),
             Layer("residual_addition", out_proj_context_result, None, residual_addition_result, None, tp_degree),
             Layer("post_attn_norm", residual_addition_result, None, post_attn_norm_result, tp_degree)
@@ -343,9 +343,21 @@ class Model:
             w_uk_first_layers = w_uk_first_layers + w_uk_first_moe_ffn_layers
 
         for layer in w_uk_first_layers:
+            if fmla_flag and decode_flag:
+                if layer.name in ["score layer for RoPE", "mask_scale_softmax", "context_matmul"]:
+                    continue
+                elif layer.name == "flash_mla":
+                    print(compressed_kv)
+                    compressed_kv.transpose()
+                    compressed_kv.cols = (output_len + 1) / 2 + input_len
+                    transposed_k_up_result.concat(ropped_q, row=False)
+                    ropped_k.cols = (output_len + 1) / 2 + input_len
+                    compressed_kv.concat(ropped_k, row = True)
+            elif layer.name =="flash_mla":
+                continue
             if layer.name == "score layer for NoPE":
                 layer.inputB.transpose()
-                if decode_flag == True:
+                if decode_flag:
                     # layer.inputB.cols = layer.inputB.cols + input_len + i
                     layer.inputB.cols = (output_len + 1) / 2 + input_len
             elif layer.name == "context_matmul":
@@ -358,41 +370,42 @@ class Model:
                         layer.inputA.rows = 1
                 else:
                     layer.inputA.rows = layer.inputA.rows * model_config['top-k'] / model_config['n_experts'] * dp_degree
-            elif layer.name == "score layer for RoPE" and decode_flag == True:
+            elif layer.name == "score layer for RoPE" and decode_flag:
                 layer.inputB.cols = (output_len + 1) / 2 + input_len
+            elif layer.name == "v_up_proj":
+                layer.inputA.rows = layer.inputA.rows / (model_config["n_heads"] / tp_degree)
+                layer.inputA.batch = layer.inputA.batch * (model_config["n_heads"] / tp_degree)
             
-            # print(layer.name)
-            # print(layer.inputA)
-            # print(layer.inputB)
+            print(layer.name)
+            print(layer.inputA)
+            print(layer.inputB)
             result = layer.forward()
             layer.output.reshape(result)
-            # print(layer.output)
+            print(layer.output)
 
             #if layer.name == "score layer for RoPE":
                 # layer.output.rows = input_len * model_config["n_heads"]
             #reshape after q_rope
-            if layer.name == "q_rope":
+            if layer.name == "k_rope":
+                ropped_k.transpose()
+            elif layer.name == "query_up":
+                layer.output.cols = layer.output.cols / model_config["n_heads"] * tp_degree
+                layer.output.batch = layer.output.batch * model_config["n_heads"] / tp_degree
+            elif layer.name == "q_rope_w":
                 if decode_flag:
-                # layer.output.rows = 128
-                # layer.output.cols = 64
-                    ropped_k.transpose()
+                    layer.output.rows = layer.output.cols / model_config["qk rope head dim"]
+                    layer.output.cols = model_config["qk rope head dim"]
                 else:
-                    layer.output.cols = layer.output.cols / (model_config["n_heads"] / tp_degree)
-                    layer.output.batch = layer.output.batch * (model_config["n_heads"] / tp_degree)
-                    ropped_k.transpose()
-            elif layer.name == "q_rope_w" and decode_flag:
-                layer.output.rows = layer.output.cols / model_config["qk rope head dim"]
-                layer.output.cols = model_config["qk rope head dim"]
+                    layer.output.rows = layer.output.rows * (model_config["n_heads"] / tp_degree)
+                    layer.output.cols = model_config["qk rope head dim"]
+            elif layer.name == "transposed (k up proj)":
+                layer.output.rows = layer.output.rows * model_config["n_heads"] / tp_degree
+                layer.output.batch = layer.output.batch / (model_config["n_heads"] / tp_degree)
             elif layer.name == "post_attn_norm":
                 post_attn_norm_result_shared.reshape(post_attn_norm_result)
-                # print(post_attn_norm_result)
-                
-                post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
-                # print(post_attn_norm_result_shared)
-                    
-            elif layer.name == "out_proj_context":
-                layer.output.batch = layer.output.batch / model_config["n_heads"]
 
+                post_attn_norm_result_shared.batch =  post_attn_norm_result_shared.batch / tp_degree
+ 
             df.loc[len(df)] = [
                 layer.name,
                 layer.get_flops(),
@@ -402,7 +415,6 @@ class Model:
                 layer.get_op_per_byte(),
                 layer.get_execution_time()
             ]
-
 
             layer.get_communication_cost()
             if layer.parallelism_cost != None:
@@ -431,5 +443,4 @@ class Model:
         total_weight_sum = (total_weight_sum + 2 * model_config['d_emb'] * model_config['n_vocab'] * data_size)
         df.loc[len(df)] = ["Total Weight Sum", "", "", "", total_weight_sum/1024/1024/1024, "", "", ""]
         Matrix.reset_flops()
-
 

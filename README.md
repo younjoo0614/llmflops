@@ -10,4 +10,4 @@ python main.py --input-len {input_len} --output-len {output_len} --batch-size {b
 
 Assuming DP * TP devices, DP * TP expert parallelism 
 
-Edit 'device_config.json' to apply parallelisms.
+Edit 'device_config.json' to change device specs
