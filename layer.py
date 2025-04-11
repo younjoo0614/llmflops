@@ -31,28 +31,27 @@ class Layer:
         self.parallelism_cost_flag = parallelism_cost_flag
         self.parallelism_cost = None
 
-        if self.tp_degree > 1:
-            if self.tp == TPType.COL:
-                if self.inputB:
-                    self.inputB.cols = self.inputB.cols / self.tp_degree
-                else: 
-                    self.inputA.cols = self.inputA.cols / self.tp_degree
-            elif self.tp == TPType.ROW:
+        if self.tp == TPType.COL:
+            if self.inputB:
+                self.inputB.cols = self.inputB.cols / self.tp_degree
+            else: 
                 self.inputA.cols = self.inputA.cols / self.tp_degree
-                if self.inputB: self.inputB.rows = self.inputB.rows / self.tp_degree
-            elif self.tp == TPType.ROW_IN:
-                self.inputA.rows = self.inputA.rows / 128
-                self.inputA.batch = self.inputA.batch * 128 / self.tp_degree
-            elif self.tp == TPType.HEAD_ROW_COL:
-                self.inputB.cols = self.inputB.cols / 128
-                self.inputB.batch = self.inputB.batch * (128 / tp_degree)
-            elif self.tp == TPType.HEAD_COL_COL:
-                self.inputA.cols = self.inputA.cols / 128
-                self.inputA.batch = self.inputA.batch * 128 / self.tp_degree
-                self.inputB.cols = self.inputB.cols / 128
-                self.inputB.batch = self.inputB.batch * 128 / self.tp_degree
-            else: # tp == None
-                pass
+        elif self.tp == TPType.ROW:
+            self.inputA.cols = self.inputA.cols / self.tp_degree
+            if self.inputB: self.inputB.rows = self.inputB.rows / self.tp_degree
+        elif self.tp == TPType.ROW_IN:
+            self.inputA.rows = self.inputA.rows / 128
+            self.inputA.batch = self.inputA.batch * 128 / self.tp_degree
+        elif self.tp == TPType.HEAD_ROW_COL:
+            self.inputB.cols = self.inputB.cols / 128
+            self.inputB.batch = self.inputB.batch * (128 / self.tp_degree)
+        elif self.tp == TPType.HEAD_COL_COL:
+            self.inputA.cols = self.inputA.cols / 128
+            self.inputA.batch = self.inputA.batch * 128 / self.tp_degree
+            self.inputB.cols = self.inputB.cols / 128
+            self.inputB.batch = self.inputB.batch * 128 / self.tp_degree
+        else: # tp == None
+            pass
 
 
     def forward(self):
@@ -99,7 +98,7 @@ class Layer:
             byte  = byte * self.inputA.data_size 
             return self.flops / self.inputA.batch / byte
         elif self.name == "flash_mla":
-            byte = self.inputB.cols * 576 * self.inputA.batch + self.inputA.batch * 128 * 576 + self.inputA.batch * 128 * 512
+            byte = self.inputB.cols * 576 * self.inputA.batch + self.inputA.batch * (128 / self.tp_degree) * (512 + 576)
             byte = byte * self.inputA.data_size
         elif self.inputB is not None:
             byte = self.inputA.get_size() + self.inputB.get_size() + self.output.get_size()
@@ -122,6 +121,11 @@ class Layer:
                 byte = byte + 3 * self.inputA.rows * self.inputA.rows + (16 * self.inputA.rows * self.inputA.rows * self.inputA.cols / Layer.shmem_size)
                 byte = byte + self.output.rows * self.output.cols
                 byte  = byte * self.inputA.data_size * self.inputA.batch
+                return byte / Layer.hbm_bw / 1e3
+            elif self.name == "flash_mla":
+                print(self.inputB)
+                byte =self.inputB.cols * 576 * self.inputA.batch + self.inputA.batch * (512 + 576) * (128 / self.tp_degree)
+                byte = byte * self.inputA.data_size
                 return byte / Layer.hbm_bw / 1e3
             if self.inputB is not None:
                 return (self.inputA.get_size() + self.inputB.get_size() + self.output.get_size()) / Layer.hbm_bw / 1e3

@@ -41,7 +41,7 @@ class Matrix:
     
     def flash_mla(self, B, real):
         result = Matrix(config.NUM_HEADS / config.TP_DEGREE, self.cols - 64, self.batch)
-        flops = self.batch * B.cols * config.NUM_HEADS * (self.cols + B.rows - 64) * 2
+        flops = self.batch * (128 / config.TP_DEGREE) * B.cols * (self.cols + B.rows - 64) * 2
 
         if real:
             Matrix.flops = int(Matrix.total_flops) + flops
@@ -77,7 +77,7 @@ class Matrix:
         B.rows = B.rows / config.TP_DEGREE
         B.batch = B.batch * config.TP_DEGREE
         result = Matrix(self.rows, B.cols, self.batch)
-        print(result)
+        # print(result)
         flops = 2 * self.rows * self.cols * result.cols * result.batch + (config.TP_DEGREE - 1) * result.rows * result.cols
 
         if real:
