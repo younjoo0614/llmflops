@@ -14,12 +14,14 @@ def load_model_config(model_num, model_config_file="./model_config.json"):
 def load_device_config(device_config_file="./device_config.json"):
     with open(device_config_file, mode="r", encoding="utf-8") as file:
         device_config = json.load(file)
-        global SH_MEM, INFINI_BW, INFINI_LATENCY, NVLINK_BW, NVLINK_LATENCY
+        global SH_MEM, INFINI_BW, INFINI_LATENCY, NVLINK_BW, NVLINK_LATENCY, NVLINK_LINK_NUM
         SH_MEM = int(device_config["SH_MEM"])
         INFINI_BW = int(device_config["INFINI_BW"])
         INFINI_LATENCY = int(device_config["INFINI_LATENCY"])
         NVLINK_BW = int(device_config["NVLINK_BW"])
         NVLINK_LATENCY = int(device_config["NVLINK_LATENCY"])
+        NVLINK_LINK_NUM = int(device_config["NVLINK_LINK_NUM"])
+        
 def set_parallelism_degree(tp_degree, dp_degree):
     global TP_DEGREE, DP_DEGREE
     TP_DEGREE = tp_degree

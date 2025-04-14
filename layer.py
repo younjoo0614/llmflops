@@ -19,8 +19,7 @@ class Layer:
                  inputB: Matrix = None,
                  output: Matrix = None,
                  tp: TPType = TPType.NONE,
-                 tp_degree: int = 1,
-                 parallelism_cost_flag = None):
+                 tp_degree: int = 1):
         self.name = name
         self.inputA = inputA
         self.inputB = inputB
@@ -28,7 +27,6 @@ class Layer:
         self.flops = None
         self.tp = tp
         self.tp_degree = tp_degree
-        self.parallelism_cost_flag = parallelism_cost_flag
         self.parallelism_cost = None
 
         if self.tp == TPType.COL:
@@ -133,10 +131,3 @@ class Layer:
                 return (self.inputA.get_size() + self.output.get_size()) / Layer.hbm_bw / 1e3
         else:
             return (self.flops) / Layer.throughput /1e6
-
-    def get_communication_cost(self):
-        if self.tp_degree <= 1 or self.parallelism_cost_flag is not True:
-            return
-        output_size = self.output.get_size()
-        self.parallelism_cost = get_allreduce_cost(self.tp_degree, output_size)
-        
