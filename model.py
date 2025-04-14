@@ -369,7 +369,6 @@ class Model:
                 if layer.name in ["score layer for RoPE", "mask_scale_softmax", "context_matmul"]:
                     continue
                 elif layer.name == "flash_mla":
-                    print(compressed_kv)
                     compressed_kv.transpose()
                     compressed_kv.cols = (output_len + 1) / 2 + input_len
                     transposed_k_up_result.concat(ropped_q, row=False)
