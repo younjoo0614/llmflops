@@ -14,7 +14,9 @@ def load_model_config(model_num, model_config_file="./model_config.json"):
 def load_device_config(device_config_file="./device_config.json"):
     with open(device_config_file, mode="r", encoding="utf-8") as file:
         device_config = json.load(file)
-        global SH_MEM, INFINI_BW, INFINI_LATENCY, NVLINK_BW, NVLINK_LATENCY, NVLINK_LINK_NUM
+        global SH_MEM, INFINI_BW, INFINI_LATENCY, NVLINK_BW, NVLINK_LATENCY, NVLINK_LINK_NUM, TFLOPS, HBM_BW
+        TFLOPS = int(device_config["TFLOPS"])
+        HBM_BW = int(device_config["HBM_BW"])
         SH_MEM = int(device_config["SH_MEM"])
         INFINI_BW = int(device_config["INFINI_BW"])
         INFINI_LATENCY = int(device_config["INFINI_LATENCY"])

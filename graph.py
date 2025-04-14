@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import matplotlib.patches as patches
+import config
 
 def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, batch_size=None, tensor_parallel=None, data_parallel=None):
     # 'residual' 또는 'norm'이 포함된 행 제거 (대소문자 구분 없이)
@@ -49,7 +50,7 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
             'k_rope', 'q_rope', 'rope', 'score', 'mask', 'context',
             'out_proj', 'residual_addition', 'post_attn_norm', "flash_attention",
             'transposed', 'score layer', 'context_matmul', 'v_up_proj_context',
-            "score layer for RoPE", "score layer for NoPE", "mask_scale_softmax"
+            "score layer for RoPE", "score layer for NoPE", "mask_scale_softmax", "flash_mla"
         ]
         if any(k in lname for k in attn_keywords):
             return 'skyblue'
@@ -87,6 +88,7 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
         is_comm_cost = "communication cost" in row["Layer Name"].lower()
 
         if is_comm_cost:
+            
             # Communication Cost: OP/B 최대로 설정, 색상 강조
             transformed_value = max_tick
             color = 'orange'
@@ -112,7 +114,8 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
                         label_text, ha='center', va='center', fontsize=12, rotation=90, color='black')
 
     # Balance point 라인
-    balance_point_log = np.log10(295)
+    balance_point = config.TFLOPS * 1000 / config.HBM_BW
+    balance_point_log = np.log10(balance_point)
     ax.axhline(y=balance_point_log, color='red', linestyle='--', linewidth=1.5)
     ax.text(100, balance_point_log, 'Balance point', va='center', ha='right',
             fontsize=11, color='red', fontweight='bold')
