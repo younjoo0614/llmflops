@@ -3,10 +3,10 @@
     "HBM_BW" : 3352,
     "LPDDR_BW" : 500,
     "SH_MEM": 262144,
-    "INFINI_BW": 100,      
-    "INFINI_LATENCY": 0.5,
+    "INFINI_BW": 50,      
+    "INFINI_LATENCY": 0.13,
     "NVLINK_BW": 25,      
-    "NVLINK_LATENCY": 3,
+    "NVLINK_LATENCY": 0.8,
     "NVLINK_LINK_NUM": 18,
     "BW_TYPE": "gb",
     "TIME_TYPE": "us"
