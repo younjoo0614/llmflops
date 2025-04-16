@@ -21,14 +21,23 @@ def get_allreduce_cost(tp_degree: int, tensor_size_bytes: int) -> float:
 #     total_time_us = send_time * count
 #     return total_time_us
 
+# #INFINI BAND - Ring
+# def get_alltoall_cost(ep_degree: int, tensor_size_bytes: int) -> float:
+#     send_data_size = ((tensor_size_bytes - (tensor_size_bytes/ep_degree)))/config.TP_DEGREE
+#     count = ep_degree - 1
+#     send_time = (config.INFINI_LATENCY + (send_data_size/(config.INFINI_BW*1e3)))
+#     total_time_us = send_time * count
+#     return total_time_us
+
 #INFINI BAND
 def get_alltoall_cost(ep_degree: int, tensor_size_bytes: int) -> float:
-    send_data_size = ((tensor_size_bytes - (tensor_size_bytes/ep_degree)))/config.TP_DEGREE
-    count = ep_degree - 1
-    send_time = (config.INFINI_LATENCY + (send_data_size/(config.INFINI_BW*1e3)))
+    receive_data_size = (tensor_size_bytes * 8) * ((ep_degree -1) / ep_degree) / config.TP_DEGREE
+
+   
+    count = 1
+    send_time = config.INFINI_LATENCY + (receive_data_size/(config.INFINI_BW*1e3))
     total_time_us = send_time * count
     return total_time_us
-
 
 
 # #NVLINK
@@ -40,10 +49,18 @@ def get_alltoall_cost(ep_degree: int, tensor_size_bytes: int) -> float:
 #     total_time_us = send_time * count
 #     return total_time_us
 
+# # #INFINI BAND - Ring
+# def get_moe_allreduce_cost(ep_degree: int, tensor_size_bytes: int) -> float:
+#     send_data_size = (tensor_size_bytes - (tensor_size_bytes/ep_degree))/2
+#     count = ep_degree - 1
+#     send_time = (config.INFINI_LATENCY + (send_data_size/(config.INFINI_BW*1e3)))
+#     total_time_us = send_time * count
+#     return total_time_us
+
 #INFINI BAND
 def get_moe_allreduce_cost(ep_degree: int, tensor_size_bytes: int) -> float:
-    send_data_size = (tensor_size_bytes - (tensor_size_bytes/ep_degree))/2
-    count = ep_degree - 1
-    send_time = (config.INFINI_LATENCY + (send_data_size/(config.INFINI_BW*1e3)))
+    receive_data_size = (tensor_size_bytes * 8) * ((ep_degree -1) / ep_degree)
+    count = 1
+    send_time = config.INFINI_LATENCY + (receive_data_size/(config.INFINI_BW*1e3))
     total_time_us = send_time * count
     return total_time_us
