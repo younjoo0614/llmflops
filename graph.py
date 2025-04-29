@@ -34,19 +34,18 @@ def create_multiple_time_graph(df, name, ax, input_len=None, output_len=None, ba
             return 'firebrick'  # 빨간색 (사실상 제거됨)
 
         # MoE FFN 계열
-        moe_keywords = ['gate_shared', 'up_shared', 'silu_shared', 'down_shared',
-                        'router', 'gate_routed', 'up_routed', 'silu_routed', 'down_routed']
+        moe_keywords = ['shared', 'route']
         if any(k in lname for k in moe_keywords):
             return 'mediumseagreen'
 
         # Dense FFN 계열
         ffn_keywords = ['gate_proj', 'up_proj', 'silu', 'down_proj']
-        if any(k in lname for k in ffn_keywords) and lname != 'v_up_proj_context':
+        if any(k in lname for k in ffn_keywords) and lname != 'v_up_proj':
             return 'salmon'
 
         # Attention 계열
         attn_keywords = [
-            'pre_attn_norm', 'query_down', 'query_up', 'kv_down', 'k_up', 'v_up',
+            'pre_attn_norm', 'query', 'kv', 'k', 'v_up',
             'k_rope', 'q_rope', 'rope', 'score', 'mask', 'context',
             'out_proj', 'residual_addition', 'post_attn_norm', "flash_attention",
             'transposed', 'score layer', 'context_matmul', 'v_up_proj_context',
