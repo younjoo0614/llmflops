@@ -72,7 +72,7 @@ def get_moe_gather_cost(tensor_size_bytes: int) -> float:
     count = 1
     receive_time = max(
         config.INFINI_LATENCY + (internode_receive_size / (config.INFINI_BW * 1e3)),
-        config.NVLINK_LATENCY + (intranode_receive_size / (config.NVLINK_BW * 1e3)),
+        config.NVLINK_LATENCY + (intranode_receive_size / (nvlink_bw * 1e3)),
     )
     total_time_us = receive_time * count
     return total_time_us

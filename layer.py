@@ -30,7 +30,6 @@ class Layer:
         self.flops = None
         self.tp = tp
         self.tp_degree = tp_degree
-        self.parallelism_cost = None
 
         if self.tp == TPType.COL:
             if self.inputB:
@@ -114,7 +113,7 @@ class Layer:
                 ) * self.inputA.data_size
             )
             byte = byte + self.output.rows * self.output.cols * self.output.data_size
-            byte = byte * self.inputA.data_size * self.inputA.batch
+            byte = byte *  self.inputA.batch
         elif self.name == "flash_mla":
             byte = (
                 self.inputB.cols * 576 + (512 + 576) * (self.inputA.rows / self.tp_degree)
