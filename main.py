@@ -6,16 +6,16 @@ from matrix import Matrix
 from layer import Layer
 from model import Model
 
-def print_layer_config(layer_config, indent=0):
-    for key, value in layer_config.items():
-        print("  " * indent + f"- {key}")
-        if isinstance(value, dict):
-            print_layer_config(value, indent + 1)
-        elif isinstance(value, list):
-            for item in value:
-                print("  " * (indent + 1) + f"- {item}")
-        else:
-            print("  " * (indent + 1) + f"  {value}")
+# def print_layer_config(layer_config, indent=0):
+#     for key, value in layer_config.items():
+#         print("  " * indent + f"- {key}")
+#         if isinstance(value, dict):
+#             print_layer_config(value, indent + 1)
+#         elif isinstance(value, list):
+#             for item in value:
+#                 print("  " * (indent + 1) + f"- {item}")
+#         else:
+#             print("  " * (indent + 1) + f"  {value}")
 
 def main():
     parser = argparse.ArgumentParser(description="Process model training with configurations")

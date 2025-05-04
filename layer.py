@@ -1,4 +1,5 @@
 import json
+import config
 from communication import get_allreduce_cost
 
 from matrix import Matrix
@@ -101,19 +102,39 @@ class Layer:
 
     def get_op_per_byte(self):
         if self.name == "flash_attention":
-            byte = 2 * self.inputB.rows * self.inputB.cols * self.inputB.data_size
-            byte = (
-                byte + 3 * self.inputA.rows * self.inputA.rows
-                + (
-                    16
-                    * self.inputA.rows
-                    * self.inputA.rows
-                    * self.inputA.cols
-                    / Layer.shmem_size
-                ) * self.inputA.data_size
-            )
-            byte = byte + self.output.rows * self.output.cols * self.output.data_size
-            byte = byte *  self.inputA.batch
+            # byte = 2 * self.inputB.rows * self.inputB.cols * self.inputB.data_size #2*d*N
+            # byte = (
+            #     byte + 3 * self.inputA.rows * self.inputA.rows
+            #     + (
+            #         16
+            #         * self.inputA.rows
+            #         * self.inputA.rows
+            #         * self.inputA.cols
+            #         / Layer.shmem_size
+            #     ) * self.inputA.data_size
+            # )
+            # byte = byte + self.output.rows * self.output.cols * self.output.data_size
+            # byte = byte *  self.inputA.batch
+
+            d = self.inputA.cols
+            block_c = config.SH_MEM / (4 * d * self.inputA.data_size)
+            block_r = min(d, (config.SH_MEM / (4 * d * self.inputA.data_size)))
+            tile_c = self.inputA.rows / block_c
+            tile_r = self.inputA.rows / block_r
+
+            byte = 2 * d * self.inputA.rows #2dN
+            byte = byte + (tile_r * tile_c * (3*block_r*d + 4* block_r))
+            byte = byte * self.inputA.batch * self.inputA.data_size
+
+            print(byte)
+
+            # byte = 2 * self.inputB.rows * self.inputB.cols #2*d*N
+            # byte += ((12*self.inputA.rows*self.inputA.rows*self.inputA.cols*self.inputA.cols + 
+            #           16*self.inputA.rows*self.inputA.rows*self.inputB.cols) / Layer.shmem_size)
+            # byte = byte *  self.inputA.batch * self.inputA.data_size
+            # print("second")
+            # print(byte)
+
         elif self.name == "flash_mla":
             byte = (
                 self.inputB.cols * 576 + (512 + 576) * (self.inputA.rows / self.tp_degree)
@@ -138,20 +159,17 @@ class Layer:
             if self.name == "flash_attention":
                 # print("B: ", self.inputB)
                 # print("A: ", self.inputA)
-                byte = 2 * self.inputB.rows * self.inputB.cols
-                byte = (
-                    byte
-                    + 3 * self.inputA.rows * self.inputA.rows
-                    + (
-                        16
-                        * self.inputA.rows
-                        * self.inputA.rows
-                        * self.inputA.cols
-                        / Layer.shmem_size
-                    )
-                )
-                byte = byte + self.output.rows * self.output.cols
-                byte = byte * self.inputA.data_size * self.inputA.batch
+
+                d = self.inputA.cols
+                block_c = config.SH_MEM / (4 * d * self.inputA.data_size)
+                block_r = min(d, (config.SH_MEM / (4 * d * self.inputA.data_size)))
+                tile_c = self.inputA.rows / block_c
+                tile_r = self.inputA.rows / block_r
+
+                byte = 2 * d * self.inputA.rows #2dN
+                byte = byte + (tile_r * tile_c * (3*block_r*d + 4* block_r))
+                byte = byte * self.inputA.batch * self.inputA.data_size
+                
                 return byte / Layer.hbm_bw / 1e3
             elif self.name == "flash_mla":
                 # print(self.inputB)
