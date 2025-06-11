@@ -118,12 +118,12 @@ class Layer:
 
             d = self.inputA.cols
             block_c = config.SH_MEM / (4 * d * self.inputA.data_size)
-            block_r = min(d, (config.SH_MEM / (4 * d * self.inputA.data_size)))
+            block_r = min(d /self.inputA.data_size, (config.SH_MEM / (4 * d * self.inputA.data_size)))
             tile_c = self.inputA.rows / block_c
             tile_r = self.inputA.rows / block_r
 
-            byte = 2 * d * self.inputA.rows #2dN
-            byte = byte + (tile_r * tile_c * (3*block_r*d + 4* block_r))
+            byte = 2 * d * self.inputA.rows
+            byte = byte + (tile_r * tile_c * (3 * config.SH_MEM / 4 + 4 * block_r))
             byte = byte * self.inputA.batch * self.inputA.data_size
 
             print(byte)
@@ -162,12 +162,12 @@ class Layer:
 
                 d = self.inputA.cols
                 block_c = config.SH_MEM / (4 * d * self.inputA.data_size)
-                block_r = min(d, (config.SH_MEM / (4 * d * self.inputA.data_size)))
+                block_r = min(d / self.inputA.data_size, (config.SH_MEM / (4 * d * self.inputA.data_size)))
                 tile_c = self.inputA.rows / block_c
                 tile_r = self.inputA.rows / block_r
 
-                byte = 2 * d * self.inputA.rows #2dN
-                byte = byte + (tile_r * tile_c * (3*block_r*d + 4* block_r))
+                byte = 2 * d * self.inputA.rows 
+                byte = byte + (tile_r * tile_c * (3 * config.SH_MEM / 4 + 4 * block_r))
                 byte = byte * self.inputA.batch * self.inputA.data_size
                 
                 return byte / Layer.hbm_bw / 1e3
